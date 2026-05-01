@@ -366,11 +366,12 @@ let viewYear = now.getFullYear();
 let expenses = [];
 
 // Settings stored locally
-let settings = JSON.parse(localStorage.getItem('settings_v2') || '{}');
-if (!settings.amitTarget) settings.amitTarget = 0;
-if (!settings.elaTarget) settings.elaTarget = 3000;
-if (!settings.budgetOn) settings.budgetOn = false;
-if (!settings.budgetLimit) settings.budgetLimit = 0;
+const savedSettings = localStorage.getItem('settings_v2');
+let settings = savedSettings ? JSON.parse(savedSettings) : {};
+if (settings.amitTarget === undefined) settings.amitTarget = 0;
+if (settings.elaTarget === undefined) settings.elaTarget = 0;
+if (settings.budgetOn === undefined) settings.budgetOn = false;
+if (settings.budgetLimit === undefined) settings.budgetLimit = 0;
 if (!settings.recurring) settings.recurring = [];
 
 function saveSettingsLocal() {
