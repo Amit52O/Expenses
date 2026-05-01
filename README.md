@@ -621,18 +621,38 @@ function renderSummary() {
   }
 
   // הסדר חשבון
+  // הלוגיקה: אם יש יעד לעמית בלבד — אלה משלמת את השאר
+  // אם יש יעד לאלה בלבד — עמית משלם את השאר
+  // אם יש יעד לשניהם — לפי היעדים
+  // אם אין יעד לאף אחד — אין חישוב
   const settleEl = document.getElementById('settle-text');
+  const personalGrand = amitTotal + elaTotal; // ללא משותף
   if (grand === 0) { settleEl.textContent = 'אין הוצאות החודש'; settleEl.style.color = '#888'; }
   else if (elaTarget === 0 && amitTarget === 0) {
-    settleEl.textContent = 'הגדר יעדים אישיים בהגדרות';
+    settleEl.textContent = 'הגדר יעד לפחות לאחד מכם בהגדרות';
     settleEl.style.color = '#888';
   } else {
-    const elaOwed = elaTarget > 0 ? elaTarget : 0;
-    const amitDiff = amitTotal - (grand - sharedTotal/2 - elaOwed);
-    const elaDiff = elaTotal - elaOwed;
-    if (Math.abs(elaDiff) < 1) { settleEl.textContent = 'מיושב! אין מה להחזיר'; settleEl.style.color = '#059669'; }
-    else if (elaDiff < 0) { settleEl.textContent = 'אלה חייבת לעמית ' + fmt(-elaDiff); settleEl.style.color = '#DC2626'; }
-    else { settleEl.textContent = 'עמית חייב לאלה ' + fmt(elaDiff); settleEl.style.color = '#2563EB'; }
+    // חישוב כמה כל אחד היה אמור לשלם מתוך הסה"כ האישי
+    let amitOwed, elaOwed;
+    if (amitTarget > 0 && elaTarget > 0) {
+      // יעד לשניהם — לפי היעדים
+      amitOwed = amitTarget;
+      elaOwed = elaTarget;
+    } else if (amitTarget > 0 && elaTarget === 0) {
+      // רק לעמית יעד — אלה משלמת את כל השאר
+      amitOwed = amitTarget;
+      elaOwed = personalGrand - amitTarget;
+    } else {
+      // רק לאלה יעד — עמית משלם את כל השאר
+      elaOwed = elaTarget;
+      amitOwed = personalGrand - elaTarget;
+    }
+    // מי שילם יותר ממה שאמור — מגיע לו החזר מהשני
+    const amitDiff = amitTotal - amitOwed; // חיובי = שילם יותר = מגיע לו
+    const elaDiff = elaTotal - elaOwed;   // חיובי = שילם יותר = מגיע לה
+    if (Math.abs(amitDiff) < 1) { settleEl.textContent = 'מיושב! אין מה להחזיר'; settleEl.style.color = '#059669'; }
+    else if (amitDiff > 0) { settleEl.textContent = 'אלה חייבת לעמית ' + fmt(amitDiff); settleEl.style.color = '#DC2626'; }
+    else { settleEl.textContent = 'עמית חייב לאלה ' + fmt(-amitDiff); settleEl.style.color = '#2563EB'; }
   }
 
   // קטגוריות
