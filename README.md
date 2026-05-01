@@ -36,6 +36,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .who-btn.amit.active { background: #EBF4FF; border-color: #2563EB; color: #1D4ED8; }
 .who-btn.ela.active { background: #FDF2F8; border-color: #9D174D; color: #831843; }
 .who-btn.shared.active { background: #F0FDF4; border-color: #059669; color: #065F46; }
+.who-btn.personal.active { background: #FFF7ED; border-color: #C2410C; color: #9A3412; }
 
 .add-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: #1a1a1a; color: white; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 0.5rem; transition: opacity 0.15s; }
 .add-btn:disabled { opacity: 0.5; }
@@ -142,7 +143,7 @@ input:checked + .slider:before { transform: translateX(-18px); }
         <label>סוג הוצאה</label>
         <div class="who-btns">
           <button class="who-btn shared active" id="type-shared" onclick="selectType('משותפת',this)">משותפת 🤝</button>
-          <button class="who-btn" id="type-personal" style="background:white;border:1px solid #ddd;color:#666" onclick="selectType('אישית',this)">אישית 👤</button>
+          <button class="who-btn personal" id="type-personal" onclick="selectType('אישית',this)">אישית 👤</button>
         </div>
       </div>
       <div class="field">
@@ -232,6 +233,10 @@ input:checked + .slider:before { transform: translateX(-18px); }
     <div class="card">
       <div class="card-title">פירוט לפי קטגוריה</div>
       <div class="cat-list" id="cat-list"></div>
+    </div>
+    <div class="metric" style="margin-bottom:10px">
+      <div class="metric-label">סה"כ הוצאות החודש (כולל אישיות)</div>
+      <div class="metric-value" id="grand-total-summary">₪0</div>
     </div>
   </div>
 
@@ -689,6 +694,7 @@ function renderSummary() {
   const cats = {};
   list.forEach(e => { cats[e.category] = (cats[e.category]||0) + e.amount; });
   const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+  document.getElementById('grand-total-summary').textContent = fmt(grand);
   document.getElementById('cat-list').innerHTML = sorted.length === 0
     ? '<div style="color:#aaa;font-size:14px;padding:8px 0">אין נתונים</div>'
     : sorted.map(([cat,amt]) => '<div class="cat-row"><span>' + cat + '</span><span style="font-weight:700">' + fmt(amt) + '</span></div>').join('');
