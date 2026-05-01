@@ -136,7 +136,13 @@ input:checked + .slider:before { transform: translateX(-18px); }
         <div class="who-btns">
           <button class="who-btn amit active" onclick="selectWho('עמית',this)">עמית</button>
           <button class="who-btn ela" onclick="selectWho('אלה',this)">אלה</button>
-          <button class="who-btn shared" onclick="selectWho('משותף',this)">משותף</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>סוג הוצאה</label>
+        <div class="who-btns">
+          <button class="who-btn shared active" id="type-shared" onclick="selectType('משותפת',this)">משותפת 🤝</button>
+          <button class="who-btn" id="type-personal" style="background:white;border:1px solid #ddd;color:#666" onclick="selectType('אישית',this)">אישית 👤</button>
         </div>
       </div>
       <div class="field">
@@ -211,6 +217,18 @@ input:checked + .slider:before { transform: translateX(-18px); }
       <div class="settle-amount" id="settle-text">אין נתונים</div>
     </div>
 
+    <div class="grid2">
+      <div class="metric">
+        <div class="metric-label">עמית — משותף</div>
+        <div class="metric-value" id="amit-shared-total">₪0</div>
+        <div class="metric-sub" id="amit-personal-sub" style="color:#888"></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">אלה — משותף</div>
+        <div class="metric-value" id="ela-shared-total">₪0</div>
+        <div class="metric-sub" id="ela-personal-sub" style="color:#888"></div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">פירוט לפי קטגוריה</div>
       <div class="cat-list" id="cat-list"></div>
@@ -226,9 +244,9 @@ input:checked + .slider:before { transform: translateX(-18px); }
     </div>
     <div class="filter-btns">
       <button class="filter-btn active" onclick="setFilter('הכל',this)">הכל</button>
+      <button class="filter-btn" onclick="setFilter('משותפת',this)">משותפות 🤝</button>
       <button class="filter-btn" onclick="setFilter('עמית',this)">עמית</button>
       <button class="filter-btn" onclick="setFilter('אלה',this)">אלה</button>
-      <button class="filter-btn" onclick="setFilter('משותף',this)">משותף</button>
     </div>
     <div class="expense-list" id="expense-list"></div>
   </div>
@@ -334,6 +352,7 @@ const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOe
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 let who = 'עמית';
+let expenseType = 'משותפת';
 let recWho = 'עמית';
 let listFilter = 'הכל';
 let now = new Date();
@@ -396,7 +415,16 @@ function showTab(name, btn) {
 
 function selectWho(name, btn) {
   who = name;
-  document.querySelectorAll('.who-btn:not(#tab-settings .who-btn)').forEach(b => b.classList.remove('active'));
+  btn.closest('.who-btns').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectType(type, btn) {
+  expenseType = type;
+  const typeRow = document.getElementById('type-shared').parentElement;
+  typeRow.querySelectorAll('button').forEach(b => {
+    b.classList.remove('active');
+  });
   btn.classList.add('active');
 }
 
@@ -449,7 +477,7 @@ async function loadFromSheets() {
     if (json.success) {
       expenses = json.data.map(e => ({
         id: e.id, date: e.date, who: e.who,
-        amount: parseFloat(e.amount), category: e.category, desc: e.desc || ''
+        amount: parseFloat(e.amount), category: e.category, desc: e.desc || '', type: e.type || 'משותפת'
       })).filter(e => e.date && !isNaN(e.amount));
       setSyncStatus('עודכן ' + new Date().toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'}));
       render();
@@ -469,7 +497,7 @@ async function addExpense() {
   if (!date) { alert('נא לבחור תאריך'); return; }
   const btn = document.getElementById('add-btn');
   btn.disabled = true; btn.textContent = 'שומר...';
-  const expense = { id: Date.now(), who, amount, category, desc, date };
+  const expense = { id: Date.now(), who, amount, category, desc, date, type: expenseType };
   try {
     await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'add', ...expense }) });
     expenses.push(expense);
@@ -566,42 +594,46 @@ function render() { renderSummary(); renderList(); }
 
 function renderSummary() {
   const list = getMonthExp();
-  const amitTotal = list.filter(e => e.who === 'עמית').reduce((s,e) => s+e.amount, 0);
-  const elaTotal = list.filter(e => e.who === 'אלה').reduce((s,e) => s+e.amount, 0);
-  const sharedTotal = list.filter(e => e.who === 'משותף').reduce((s,e) => s+e.amount, 0);
-  const grand = amitTotal + elaTotal + sharedTotal;
+  const sharedList = list.filter(e => !e.type || e.type === 'משותפת');
+  const amitShared = sharedList.filter(e => e.who === 'עמית').reduce((s,e) => s+e.amount, 0);
+  const elaShared = sharedList.filter(e => e.who === 'אלה').reduce((s,e) => s+e.amount, 0);
+  const sharedGrand = sharedList.reduce((s,e) => s+e.amount, 0);
+  const amitPersonal = list.filter(e => e.type === 'אישית' && e.who === 'עמית').reduce((s,e) => s+e.amount, 0);
+  const elaPersonal = list.filter(e => e.type === 'אישית' && e.who === 'אלה').reduce((s,e) => s+e.amount, 0);
+  const amitTotal = amitShared + amitPersonal;
+  const elaTotal = elaShared + elaPersonal;
+  const grand = amitTotal + elaTotal;
 
   document.getElementById('amit-total').textContent = fmt(amitTotal);
   document.getElementById('ela-total').textContent = fmt(elaTotal);
 
-  // יעד אלה
   const elaTarget = settings.elaTarget;
   const amitTarget = settings.amitTarget;
   const elaSubEl = document.getElementById('ela-sub');
   const amitSubEl = document.getElementById('amit-sub');
 
   if (elaTarget > 0) {
-    const diff = elaTotal - elaTarget;
+    const diff = elaShared - elaTarget;
     if (diff >= 0) { elaSubEl.textContent = 'שילמה ' + fmt(diff) + ' יותר'; elaSubEl.className = 'metric-sub positive'; }
     else { elaSubEl.textContent = 'נותרו ' + fmt(-diff); elaSubEl.className = 'metric-sub negative'; }
   } else { elaSubEl.textContent = 'ללא יעד'; elaSubEl.className = 'metric-sub neutral'; }
 
   if (amitTarget > 0) {
-    const diff = amitTotal - amitTarget;
+    const diff = amitShared - amitTarget;
     if (diff >= 0) { amitSubEl.textContent = 'שילם ' + fmt(diff) + ' יותר'; amitSubEl.className = 'metric-sub positive'; }
     else { amitSubEl.textContent = 'נותרו ' + fmt(-diff); amitSubEl.className = 'metric-sub negative'; }
   } else { amitSubEl.textContent = 'משלים את השאר'; amitSubEl.className = 'metric-sub neutral'; }
 
-  // תקציב משותף
+  // תקציב משותף (רק הוצאות משותפות)
   const budgetCard = document.getElementById('budget-card');
   if (settings.budgetOn && settings.budgetLimit > 0) {
     budgetCard.style.display = 'block';
-    document.getElementById('budget-spent').textContent = fmt(grand);
-    const left = settings.budgetLimit - grand;
+    document.getElementById('budget-spent').textContent = fmt(sharedGrand);
+    const left = settings.budgetLimit - sharedGrand;
     const leftEl = document.getElementById('budget-left');
     const subEl = document.getElementById('budget-sub');
     const bar = document.getElementById('budget-bar');
-    const pct = Math.min(100, Math.round((grand / settings.budgetLimit) * 100));
+    const pct = Math.min(100, Math.round((sharedGrand / settings.budgetLimit) * 100));
     bar.style.width = pct + '%';
     if (left >= 0) {
       leftEl.textContent = fmt(left);
@@ -620,39 +652,37 @@ function renderSummary() {
     budgetCard.style.display = 'none';
   }
 
-  // הסדר חשבון
-  // הלוגיקה: אם יש יעד לעמית בלבד — אלה משלמת את השאר
-  // אם יש יעד לאלה בלבד — עמית משלם את השאר
-  // אם יש יעד לשניהם — לפי היעדים
-  // אם אין יעד לאף אחד — אין חישוב
+  // הסדר חשבון (מבוסס על הוצאות משותפות בלבד)
   const settleEl = document.getElementById('settle-text');
-  const personalGrand = amitTotal + elaTotal; // ללא משותף
-  if (grand === 0) { settleEl.textContent = 'אין הוצאות החודש'; settleEl.style.color = '#888'; }
+  if (sharedGrand === 0) { settleEl.textContent = 'אין הוצאות משותפות החודש'; settleEl.style.color = '#888'; }
   else if (elaTarget === 0 && amitTarget === 0) {
     settleEl.textContent = 'הגדר יעד לפחות לאחד מכם בהגדרות';
     settleEl.style.color = '#888';
   } else {
-    // חישוב כמה כל אחד היה אמור לשלם מתוך הסה"כ האישי
     let amitOwed, elaOwed;
     if (amitTarget > 0 && elaTarget > 0) {
-      // יעד לשניהם — לפי היעדים
-      amitOwed = amitTarget;
-      elaOwed = elaTarget;
+      amitOwed = amitTarget; elaOwed = elaTarget;
     } else if (amitTarget > 0 && elaTarget === 0) {
-      // רק לעמית יעד — אלה משלמת את כל השאר
-      amitOwed = amitTarget;
-      elaOwed = personalGrand - amitTarget;
+      amitOwed = amitTarget; elaOwed = sharedGrand - amitTarget;
     } else {
-      // רק לאלה יעד — עמית משלם את כל השאר
-      elaOwed = elaTarget;
-      amitOwed = personalGrand - elaTarget;
+      elaOwed = elaTarget; amitOwed = sharedGrand - elaTarget;
     }
-    // מי שילם יותר ממה שאמור — מגיע לו החזר מהשני
-    const amitDiff = amitTotal - amitOwed; // חיובי = שילם יותר = מגיע לו
-    const elaDiff = elaTotal - elaOwed;   // חיובי = שילם יותר = מגיע לה
+    const amitDiff = amitShared - amitOwed;
     if (Math.abs(amitDiff) < 1) { settleEl.textContent = 'מיושב! אין מה להחזיר'; settleEl.style.color = '#059669'; }
     else if (amitDiff > 0) { settleEl.textContent = 'אלה חייבת לעמית ' + fmt(amitDiff); settleEl.style.color = '#DC2626'; }
     else { settleEl.textContent = 'עמית חייב לאלה ' + fmt(-amitDiff); settleEl.style.color = '#2563EB'; }
+  }
+
+  // פירוט אישי/משותף
+  const amitSharedEl = document.getElementById('amit-shared-total');
+  if (amitSharedEl) {
+    amitSharedEl.textContent = fmt(amitShared);
+    document.getElementById('amit-personal-sub').textContent = amitPersonal > 0 ? 'אישי: ' + fmt(amitPersonal) : 'ללא הוצאות אישיות';
+  }
+  const elaSharedEl = document.getElementById('ela-shared-total');
+  if (elaSharedEl) {
+    elaSharedEl.textContent = fmt(elaShared);
+    document.getElementById('ela-personal-sub').textContent = elaPersonal > 0 ? 'אישי: ' + fmt(elaPersonal) : 'ללא הוצאות אישיות';
   }
 
   // קטגוריות
@@ -661,12 +691,14 @@ function renderSummary() {
   const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]);
   document.getElementById('cat-list').innerHTML = sorted.length === 0
     ? '<div style="color:#aaa;font-size:14px;padding:8px 0">אין נתונים</div>'
-    : sorted.map(([cat,amt]) => `<div class="cat-row"><span>${cat}</span><span style="font-weight:700">${fmt(amt)}</span></div>`).join('');
+    : sorted.map(([cat,amt]) => '<div class="cat-row"><span>' + cat + '</span><span style="font-weight:700">' + fmt(amt) + '</span></div>').join('');
 }
 
 function renderList() {
   const list = getMonthExp().slice().reverse();
-  const filtered = listFilter === 'הכל' ? list : list.filter(e => e.who === listFilter);
+  const filtered = listFilter === 'הכל' ? list :
+    listFilter === 'משותפת' ? list.filter(e => !e.type || e.type === 'משותפת') :
+    list.filter(e => e.who === listFilter);
   const el = document.getElementById('expense-list');
   if (!filtered.length) { el.innerHTML = '<div class="empty">אין הוצאות</div>'; return; }
   const dotClass = { 'עמית': 'dot-amit', 'אלה': 'dot-ela', 'משותף': 'dot-shared' };
@@ -678,7 +710,7 @@ function renderList() {
         <div class="exp-dot ${dotClass[e.who]||'dot-shared'}"></div>
         <div>
           <div class="exp-desc">${e.desc||e.category}</div>
-          <div class="exp-meta">${e.who} · ${e.category} · ${dateStr}</div>
+          <div class="exp-meta">${e.who} · ${e.type||'משותפת'} · ${e.category} · ${dateStr}</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
