@@ -68,9 +68,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 .cat-item-edit { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 .cat-item-edit:last-child { border-bottom: none; }
-.add-cat-row { display: flex; gap: 8px; margin-top: 10px; }
-.add-cat-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; }
-.add-cat-row button { background: #1a1a1a; color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; }
 
 .chart-container { position: relative; width: 100%; max-width: 300px; margin: 0 auto 1.5rem auto; display: none; }
 </style>
@@ -136,7 +133,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div style="font-size: 14px; color: #1E3A8A;" id="settlement-text">טוען נתונים...</div>
     </div>
 
-    <!-- 4 הקוביות המבוקשות בדיוק -->
     <div class="grid2">
       <div class="metric">
         <div class="metric-label">עמית (משותף)</div>
@@ -191,14 +187,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
 
     <div class="card">
-      <div class="card-title">עריכת קטגוריות</div>
-      <div style="font-size:12px; color:#888; margin-bottom:12px;">הקטגוריות והתקציבים נשמרים במכשיר זה.</div>
+      <div class="card-title">קטגוריות מוגדרות</div>
+      <div style="font-size:12px; color:#888; margin-bottom:12px;">הקטגוריות קבועות ואחידות לשני המכשירים דרך קוד המערכת.</div>
       <div id="categories-edit-list"></div>
-      
-      <div class="add-cat-row">
-        <input type="text" id="new-cat-input" placeholder="שם קטגוריה חדשה">
-        <button onclick="addNewCategory()">הוסף</button>
-      </div>
     </div>
   </div>
 </div>
@@ -213,7 +204,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
-// >>> הכנס כאן את הכתובת האמיתית שלך מ-Google Sheets במקום הטקסט <<<
 const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec'; 
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
@@ -224,8 +214,9 @@ let viewMonth = now.getMonth();
 let viewYear = now.getFullYear();
 let expenses = [];
 
-const defaultCategories = ['דיור', 'סופר', 'ריהוט', 'פנאי', 'סטרימינג ואינטרנט', 'חשבונות', 'תחבורה', 'מתנות ואירועים', 'חופשות ונופש', 'שונות'];
-let userCategories = JSON.parse(localStorage.getItem('my_categories')) || defaultCategories;
+// קטגוריות אחידות קבועות מראש לשני המכשירים
+const categories = ['דיור', 'סופר', 'ריהוט', 'פנאי', 'סטרימינג ואינטרנט', 'חשבונות', 'תחבורה', 'מתנות ואירועים', 'חופשות ונופש', 'שונות'];
+
 let sharedBudget = parseFloat(localStorage.getItem('my_shared_budget')) || 0;
 let elaTarget = parseFloat(localStorage.getItem('my_ela_target')) || 0;
 
@@ -257,43 +248,16 @@ function saveBudgets() {
 
 function populateCategoryDropdowns() {
   const select = document.getElementById('category');
-  select.innerHTML = userCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+  select.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 }
 
 function renderCategoriesSettings() {
   const listEl = document.getElementById('categories-edit-list');
-  listEl.innerHTML = userCategories.map((cat, index) => `
+  listEl.innerHTML = categories.map(cat => `
     <div class="cat-item-edit">
       <span>${cat}</span>
-      <button class="del-btn" onclick="deleteCategory(${index})">✕</button>
     </div>
   `).join('');
-}
-
-function addNewCategory() {
-  const input = document.getElementById('new-cat-input');
-  const val = input.value.trim();
-  if (!val) return;
-  if (userCategories.includes(val)) { alert('הקטגוריה כבר קיימת'); return; }
-  userCategories.push(val);
-  saveCategories();
-  input.value = '';
-  showToast('קטגוריה נוספה', 'success');
-}
-
-function deleteCategory(index) {
-  if (userCategories.length <= 1) { alert('חייבת להישאר לפחות קטגוריה אחת'); return; }
-  if (confirm('למחוק את הקטגוריה הזו?')) {
-    userCategories.splice(index, 1);
-    saveCategories();
-    showToast('קטגוריה נמחקה', 'success');
-  }
-}
-
-function saveCategories() {
-  localStorage.setItem('my_categories', JSON.stringify(userCategories));
-  populateCategoryDropdowns();
-  renderCategoriesSettings();
 }
 
 function showTab(name, btn) {
@@ -422,7 +386,6 @@ function renderSummary() {
   
   const totalShared = amitShared + elaShared;
   
-  // 1. ניהול תצוגת תיבת התקציב המשותף
   const budgetBoxEl = document.getElementById('budget-box');
   if (sharedBudget && sharedBudget > 0) {
     budgetBoxEl.style.display = 'block';
@@ -444,7 +407,6 @@ function renderSummary() {
     budgetBoxEl.style.display = 'none';
   }
 
-  // 2. סטטוס החזרים: לפי יעד אלה או חלוקה שווה אוטומטית אם אין יעד
   const settlementEl = document.getElementById('settlement-text');
   if (elaTarget > 0) {
     const refund = elaShared - elaTarget;
@@ -456,24 +418,20 @@ function renderSummary() {
       settlementEl.innerHTML = `אלה שילמה בדיוק <strong>${fmt(elaShared)}</strong> לפי היעד. אין צורך בהחזרים.`;
     }
   } else {
-    // חישוב חלוקה שווה בשווה (חצי מהסכום הכולל של ההוצאות המשותפות לכל אחד)
     const targetPerPerson = totalShared / 2;
-    const diffAmit = amitShared - targetPerPerson; // חיובי = עמית שילם יותר מדי, שלילי = עמית שילם פחות מדי
+    const diffAmit = amitShared - targetPerPerson;
     
     if (totalShared === 0) {
       settlementEl.textContent = 'אין הוצאות משותפות החודש.';
     } else if (Math.abs(diffAmit) < 0.5) {
-      settlementEl.innerHTML = `ההוצאות המשותפות מתחוקות שווה בשווה (סה"כ ${fmt(totalShared)}).<br>✨ <strong>החשבון מאוזן לגמרי!</strong>`;
+      settlementEl.innerHTML = `ההוצאות המשותפות מתחלקות שווה בשווה (סה"כ ${fmt(totalShared)}).<br>✨ <strong>החשבון מאוזן לגמרי!</strong>`;
     } else if (diffAmit > 0) {
-      // עמית שילם יותר מחצי, אלה צריכה להחזיר לעמית
       settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>אלה צריכה להחזיר לעמית: ${fmt(diffAmit)}</strong>`;
     } else {
-      // אלה שילמה יותר מחצי, עמית צריך להחזיר לאלה
       settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(Math.abs(diffAmit))}</strong>`;
     }
   }
 
-  // 3. עדכון 4 הקוביות בלבד
   document.getElementById('amit-shared-total').textContent = fmt(amitShared);
   document.getElementById('ela-shared-total').textContent = fmt(elaShared);
   document.getElementById('amit-personal-total').textContent = fmt(amitPersonal);
