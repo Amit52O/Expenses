@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ניהול הוצאות משותפות</title>
     <style>
         :root {
@@ -235,11 +235,6 @@
     <div class="container">
         <!-- Dashboard Tab -->
         <div id="tab-dashboard" class="tab-content active">
-            <div class="card" style="margin-bottom: 1rem;">
-                <label>בחר חודש סיכום</label>
-                <select id="month-filter" onchange="render()"></select>
-            </div>
-
             <div class="metrics-grid">
                 <div class="metric-card">
                     <h3>עמית שילם (משותף)</h3>
@@ -260,7 +255,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 0.75rem;">סיכום התחשבנות לחודש הנבחר</h3>
+                <h3 style="margin-bottom: 0.75rem;">סיכום התחשבנות</h3>
                 <p id="settlement-text" style="font-size: 0.95rem; line-height: 1.5;">טוען נתונים...</p>
             </div>
         </div>
@@ -357,8 +352,7 @@
     </nav>
 
     <script>
-        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec';
-
+        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'
         let expenses = [];
         let categories = ["דיור", "סופר", "ריהוט", "פנאי", "סטרימינג ואינטרנט", "חשבונות", "תחבורה", "מתנות ואירועים", "חופשות ונופש", "שונות"];
 
@@ -381,7 +375,7 @@
         }
 
         async function loadFromSheets() {
-            if (API.includes('הדבק_כאן')) {
+            if (API === 'PUT_YOUR_REAL_LINK_HERE') {
                 showToast('שגיאה: חסר קישור לשרת', 'error');
                 return;
             }
@@ -411,7 +405,6 @@
                     
                     populateCategoryDropdowns();
                     renderCategoriesSettings();
-                    updateMonthDropdown();
                     render();
                     showToast('הנתונים נטענו בהצלחה', 'success');
                 } else {
@@ -424,7 +417,7 @@
         }
 
         async function sendToServer(action, payload) {
-            if (API.includes('הדבק_כאן')) return;
+            if (API === 'PUT_YOUR_REAL_LINK_HERE') return;
             try {
                 await fetch(API, {
                     method: 'POST',
@@ -484,41 +477,6 @@
             showToast('הקטגוריה נמחקה');
         }
 
-        function updateMonthDropdown() {
-            const monthSelect = document.getElementById('month-filter');
-            const currentSelected = monthSelect.value;
-            
-            // איסוף חודשים ייחודיים מתוך ההוצאות בפורמט YYYY-MM
-            const monthsSet = new Set();
-            expenses.forEach(e => {
-                if (e.date) {
-                    const ym = e.date.substring(0, 7);
-                    monthsSet.add(ym);
-                }
-            });
-
-            // הוספת החודש הנוכחי אוטומטית אם אין הוצאות עדיין
-            const nowStr = new Date().toISOString().substring(0, 7);
-            monthsSet.add(nowStr);
-
-            const sortedMonths = Array.from(monthsSet).sort().reverse();
-
-            monthSelect.innerHTML = '';
-            sortedMonths.forEach(m => {
-                const [year, month] = m.split('-');
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = `${month}/${year}`;
-                monthSelect.appendChild(opt);
-            });
-
-            if (sortedMonths.includes(currentSelected)) {
-                monthSelect.value = currentSelected;
-            } else {
-                monthSelect.value = nowStr;
-            }
-        }
-
         async function handleFormSubmit(e) {
             e.preventDefault();
             const expense = {
@@ -532,7 +490,6 @@
             };
 
             expenses.push(expense);
-            updateMonthDropdown();
             render();
             
             document.getElementById('amount').value = '';
@@ -545,27 +502,21 @@
 
         async function deleteExpense(id) {
             expenses = expenses.filter(e => e.id !== id);
-            updateMonthDropdown();
             render();
             await sendToServer('delete', { id: id });
             showToast('ההוצאה נמחקה');
         }
 
         function render() {
-            const selectedMonth = document.getElementById('month-filter').value;
-            
-            // סינון הוצאות לפי החודש הנבחר בלבד
-            const filteredExpenses = expenses.filter(e => e.date && e.date.startsWith(selectedMonth));
-
             let amitShared = 0, elaShared = 0, amitPersonal = 0, elaPersonal = 0;
             const listEl = document.getElementById('expenses-list');
             listEl.innerHTML = '';
 
-            if (filteredExpenses.length === 0) {
-                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות לחודש זה.</p>';
+            if (expenses.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>';
             }
 
-            const sorted = [...filteredExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
 
             sorted.forEach(e => {
                 if (e.type === 'משותפת') {
@@ -601,15 +552,15 @@
             const settlementText = document.getElementById('settlement-text');
 
             if (totalShared === 0) {
-                settlementText.textContent = 'אין עדיין הוצאות משותפות להתחשבנות לחודש זה.';
+                settlementText.textContent = 'אין עדיין הוצאות משותפות להתחשבנות.';
             } else {
                 const diff = amitShared - targetPerPerson;
                 if (Math.abs(diff) < 0.01) {
-                    settlementText.textContent = 'ההוצאות המשותפות לחודש זה מאוזנות לחלוטין! אין הפרשים.';
+                    settlementText.textContent = 'ההוצאות המשותפות מאוזנות לחלוטין! אין הפרשים.';
                 } else if (diff > 0) {
-                    settlementText.textContent = `אלה צריכה להעביר לעמית ₪${diff.toFixed(2)} כדי לאזן את ההוצאות החודש.`;
+                    settlementText.textContent = `אלה צריכה להעביר לעמית ₪${diff.toFixed(2)} כדי לאזן את ההוצאות המשותפות.`;
                 } else {
-                    settlementText.textContent = `עמית צריך להעביר לאלה ₪${Math.abs(diff).toFixed(2)} כדי לאזן את ההוצאות החודש.`;
+                    settlementText.textContent = `עמית צריך להעביר לאלה ₪${Math.abs(diff).toFixed(2)} כדי לאזן את ההוצאות המשותפות.`;
                 }
             }
         }
