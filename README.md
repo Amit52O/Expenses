@@ -351,7 +351,7 @@ function getMonthExp() {
 function fmt(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
 
 async function loadFromSheets() {
-  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+  if (API === 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec') {
     showToast('שגיאה: חסר קישור לשרת', 'error');
     return;
   }
@@ -376,7 +376,7 @@ async function loadFromSheets() {
 }
 
 async function addExpense() {
-  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+  if (API === 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec') {
     alert('חסר קישור לשרת! נא לעדכן בקוד.');
     return;
   }
