@@ -136,6 +136,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div style="font-size: 14px; color: #1E3A8A;" id="settlement-text">טוען נתונים...</div>
     </div>
 
+    <!-- 4 הקוביות המבוקשות -->
     <div class="grid2">
       <div class="metric">
         <div class="metric-label">עמית (משותף)</div>
@@ -213,7 +214,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <script>
 // >>> הכנס כאן את הכתובת האמיתית שלך מ-Google Sheets במקום הטקסט <<<
-const API = '(https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec)'; 
+const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec'; 
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 let who = 'עמית';
@@ -417,7 +418,6 @@ function renderSummary() {
   
   const totalShared = amitShared + elaShared;
   
-  // טיפול בתצוגת תיבת התקציב
   const budgetBoxEl = document.getElementById('budget-box');
   if (sharedBudget && sharedBudget > 0) {
     budgetBoxEl.style.display = 'block';
