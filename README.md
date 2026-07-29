@@ -43,7 +43,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .metric-value { font-size: 21px; font-weight: 700; color: #1a1a1a; }
 .metric-sub { font-size: 12px; margin-top: 3px; color: #888; }
 
-/* עיצוב התראת חריגה */
 .over-budget { color: #DC2626 !important; }
 .budget-box { background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 12px; margin-bottom: 1rem; text-align: center; }
 
@@ -83,7 +82,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <span id="header-month"></span>
   </div>
 
-  <!-- מסך הוספת הוצאה -->
   <div id="tab-add" class="section active">
     <div class="card">
       <div class="field">
@@ -120,7 +118,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
   </div>
 
-  <!-- מסך סיכום ותרשימים -->
   <div id="tab-summary" class="section">
     <div class="month-nav">
       <button class="month-btn" onclick="changeMonth(-1)">&#8249;</button>
@@ -128,14 +125,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <button class="month-btn" onclick="changeMonth(1)">&#8250;</button>
     </div>
     
-    <!-- תיבת מעקב תקציב משותף -->
     <div class="budget-box">
       <div class="metric-label">תקציב משותף חודשי</div>
       <div class="metric-value" id="shared-budget-status">₪0 / ₪0</div>
       <div class="metric-sub" id="shared-budget-diff">נשאר לתקציב: ₪0</div>
     </div>
 
-    <!-- תיבת החזרים לפי היעד של אלה -->
     <div class="card" style="background: #EFF6FF; border-color: #BFDBFE;">
       <div class="card-title" style="color: #1E40AF;">סטטוס החזרים (לפי יעד אלה)</div>
       <div style="font-size: 14px; color: #1E3A8A;" id="settlement-text">טוען נתונים...</div>
@@ -157,25 +152,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div class="metric-value" id="grand-total-summary">₪0</div>
     </div>
 
-    <!-- תרשימי עוגה -->
     <div class="card" id="charts-card">
       <div class="card-title" style="text-align:center; margin-bottom: 20px;">פילוג הוצאות חודשי</div>
-      
-      <div class="chart-container" id="container-sharedChart">
-        <canvas id="sharedChart"></canvas>
-      </div>
-      
-      <div class="chart-container" id="container-amitChart">
-        <canvas id="amitChart"></canvas>
-      </div>
-      
-      <div class="chart-container" id="container-elaChart">
-        <canvas id="elaChart"></canvas>
-      </div>
+      <div class="chart-container" id="container-sharedChart"><canvas id="sharedChart"></canvas></div>
+      <div class="chart-container" id="container-amitChart"><canvas id="amitChart"></canvas></div>
+      <div class="chart-container" id="container-elaChart"><canvas id="elaChart"></canvas></div>
     </div>
   </div>
 
-  <!-- מסך רשימה -->
   <div id="tab-list" class="section">
     <div class="month-nav">
       <button class="month-btn" onclick="changeMonth(-1)">&#8249;</button>
@@ -186,7 +170,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="expense-list" id="expense-list"></div>
   </div>
 
-  <!-- מסך הגדרות -->
   <div id="tab-settings" class="section">
     <div class="card">
       <div class="card-title">הגדרות תקציב וחוקים</div>
@@ -213,7 +196,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
 </div>
 
-<!-- תפריט תחתון -->
 <div class="bottom-nav">
   <button class="nav-btn active" onclick="showTab('add',this)"><span class="nav-icon">➕</span>הוסף</button>
   <button class="nav-btn" onclick="showTab('summary',this)"><span class="nav-icon">📊</span>סיכום</button>
@@ -224,7 +206,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec';
+// >>> פה אתה חייב לשים את הקישור האמיתי שלך מ-Google Sheets במקום הטקסט <<<
+const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec'
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 let who = 'עמית';
@@ -234,7 +217,6 @@ let viewMonth = now.getMonth();
 let viewYear = now.getFullYear();
 let expenses = [];
 
-// טעינת הגדרות תקציב וקטגוריות מ-LocalStorage
 const defaultCategories = ['דיור', 'סופר', 'ריהוט', 'פנאי', 'סטרימינג ואינטרנט', 'חשבונות', 'תחבורה', 'מתנות ואירועים', 'חופשות ונופש', 'שונות'];
 let userCategories = JSON.parse(localStorage.getItem('my_categories')) || defaultCategories;
 let sharedBudget = parseFloat(localStorage.getItem('my_shared_budget')) || 0;
@@ -258,7 +240,7 @@ function saveBudgets() {
   elaTarget = parseFloat(document.getElementById('setting-ela-target').value) || 0;
   localStorage.setItem('my_shared_budget', sharedBudget);
   localStorage.setItem('my_ela_target', elaTarget);
-  showToast('הגדרות התקציב שנשמרו ✓', 'success');
+  showToast('הגדרות התקציב נשמרו', 'success');
   renderSummary();
 }
 
@@ -285,7 +267,7 @@ function addNewCategory() {
   userCategories.push(val);
   saveCategories();
   input.value = '';
-  showToast('קטגוריה נוספה ✓', 'success');
+  showToast('קטגוריה נוספה', 'success');
 }
 
 function deleteCategory(index) {
@@ -348,6 +330,10 @@ function getMonthExp() {
 function fmt(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
 
 async function loadFromSheets() {
+  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+    showToast('שגיאה: חסר קישור לשרת', 'error');
+    return;
+  }
   showToast('טוען נתונים...', 'success');
   try {
     const res = await fetch(API);
@@ -363,6 +349,10 @@ async function loadFromSheets() {
 }
 
 async function addExpense() {
+  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+    alert('חסר קישור לשרת! נא לעדכן בקוד.');
+    return;
+  }
   const amount = parseFloat(document.getElementById('amount').value);
   const category = document.getElementById('category').value;
   const desc = document.getElementById('desc').value.trim();
@@ -379,7 +369,7 @@ async function addExpense() {
     expenses.push(expense);
     document.getElementById('amount').value = '';
     document.getElementById('desc').value = '';
-    showToast('ההוצאה נוספה ✓', 'success');
+    showToast('ההוצאה נוספה', 'success');
     render();
   } catch(err) { showToast('שגיאה בשמירה', 'error'); }
   btn.disabled = false; btn.textContent = '+ הוסף הוצאה';
@@ -419,7 +409,6 @@ function renderSummary() {
   const totalShared = amitShared + elaShared;
   const grand = list.reduce((s,e) => s+e.amount, 0);
   
-  // 1. מעקב תקציב משותף
   const sharedStatusEl = document.getElementById('shared-budget-status');
   const sharedDiffEl = document.getElementById('shared-budget-diff');
   sharedStatusEl.textContent = `${fmt(totalShared)} / ${fmt(sharedBudget)}`;
@@ -432,26 +421,25 @@ function renderSummary() {
       sharedDiffEl.classList.add('over-budget');
     } else {
       sharedStatusEl.classList.remove('over-budget');
-      sharedDiffEl.textContent = `נשאר לתקציב المשותף: ${fmt(diff)}`;
+      sharedDiffEl.textContent = `נשאר לתקציב המשותף: ${fmt(diff)}`;
       sharedDiffEl.classList.remove('over-budget');
     }
   } else {
     sharedDiffEl.textContent = 'לא הוגדר תקציב (ניתן להגדיר בהגדרות)';
   }
 
-  // 2. חישוב החזרים לפי היעד של אלה
   const settlementEl = document.getElementById('settlement-text');
   if (elaTarget > 0) {
     const refund = elaShared - elaTarget;
     if (refund > 0) {
       settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות (היעד: ${fmt(elaTarget)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(refund)}</strong>`;
     } else if (refund < 0) {
-      settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות (טרם הגיעה ליעד של ${fmt(elaTarget)}).<br>אלה יכולה לשלם עוד <strong>${fmt(Math.abs(refund))}</strong> עד שתגיע ליעד.`;
+      settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות.<br>אלה יכולה לשלם עוד <strong>${fmt(Math.abs(refund))}</strong> עד שתגיע ליעד.`;
     } else {
       settlementEl.innerHTML = `אלה שילמה בדיוק <strong>${fmt(elaShared)}</strong> לפי היעד. אין צורך בהחזרים.`;
     }
   } else {
-    settlementEl.textContent = 'לא הוגדר יעד הוצאה לאלה. ניתן להגדיר בלשונית הגדרות.';
+    settlementEl.textContent = 'לא הוגדר יעד הוצאה לאלה.';
   }
 
   document.getElementById('amit-shared-total').textContent = fmt(amitShared);
