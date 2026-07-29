@@ -136,7 +136,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div style="font-size: 14px; color: #1E3A8A;" id="settlement-text">טוען נתונים...</div>
     </div>
 
-    <!-- 4 הקוביות המבוקשות -->
+    <!-- 4 קוביות מדויקות בלבד -->
     <div class="grid2">
       <div class="metric">
         <div class="metric-label">עמית (משותף)</div>
@@ -243,8 +243,12 @@ function init() {
 }
 
 function saveBudgets() {
-  sharedBudget = parseFloat(document.getElementById('setting-shared-budget').value) || 0;
-  elaTarget = parseFloat(document.getElementById('setting-ela-target').value) || 0;
+  const sbVal = document.getElementById('setting-shared-budget').value.trim();
+  sharedBudget = (sbVal === '' || isNaN(sbVal)) ? 0 : parseFloat(sbVal);
+  
+  const etVal = document.getElementById('setting-ela-target').value.trim();
+  elaTarget = (etVal === '' || isNaN(etVal)) ? 0 : parseFloat(etVal);
+
   localStorage.setItem('my_shared_budget', sharedBudget);
   localStorage.setItem('my_ela_target', elaTarget);
   showToast('הגדרות התקציב נשמרו', 'success');
@@ -418,6 +422,7 @@ function renderSummary() {
   
   const totalShared = amitShared + elaShared;
   
+  // ניהול תצוגת תיבת התקציב המשותף בהתאם לדרישה
   const budgetBoxEl = document.getElementById('budget-box');
   if (sharedBudget && sharedBudget > 0) {
     budgetBoxEl.style.display = 'block';
@@ -453,6 +458,7 @@ function renderSummary() {
     settlementEl.textContent = 'לא הוגדר יעד הוצאה לאלה.';
   }
 
+  // עדכון הערכים ב-4 הקוביות בלבד
   document.getElementById('amit-shared-total').textContent = fmt(amitShared);
   document.getElementById('ela-shared-total').textContent = fmt(elaShared);
   document.getElementById('amit-personal-total').textContent = fmt(amitPersonal);
