@@ -44,7 +44,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .metric-sub { font-size: 12px; margin-top: 3px; color: #888; }
 
 .over-budget { color: #DC2626 !important; }
-.budget-box { background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 12px; margin-bottom: 1rem; text-align: center; }
+.budget-box { background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 12px; margin-bottom: 1rem; text-align: center; display: none; }
 
 .month-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 1rem; }
 .month-btn { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 5px 14px; cursor: pointer; color: #666; font-size: 18px; }
@@ -125,7 +125,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <button class="month-btn" onclick="changeMonth(1)">&#8250;</button>
     </div>
     
-    <div class="budget-box">
+    <div class="budget-box" id="budget-box">
       <div class="metric-label">תקציב משותף חודשי</div>
       <div class="metric-value" id="shared-budget-status">₪0 / ₪0</div>
       <div class="metric-sub" id="shared-budget-diff">נשאר לתקציב: ₪0</div>
@@ -138,21 +138,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
     <div class="grid2">
       <div class="metric">
-        <div class="metric-label">עמית שילם (משותף)</div>
+        <div class="metric-label">עמית (משותף)</div>
         <div class="metric-value" id="amit-shared-total">₪0</div>
       </div>
       <div class="metric">
-        <div class="metric-label">אלה שילמה (משותף)</div>
+        <div class="metric-label">אלה (משותף)</div>
         <div class="metric-value" id="ela-shared-total">₪0</div>
       </div>
     </div>
-    
-    <div class="metric" style="margin-bottom:1rem">
-      <div class="metric-label">סה"כ הוצאות החודש (כללי)</div>
-      <div class="metric-value" id="grand-total-summary">₪0</div>
+
+    <div class="grid2">
+      <div class="metric">
+        <div class="metric-label">עמית (אישי)</div>
+        <div class="metric-value" id="amit-personal-total">₪0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">אלה (אישי)</div>
+        <div class="metric-value" id="ela-personal-total">₪0</div>
+      </div>
     </div>
 
-    <div class="card" id="charts-card">
+    <div class="card" id="charts-card" style="margin-top: 1rem;">
       <div class="card-title" style="text-align:center; margin-bottom: 20px;">פילוג הוצאות חודשי</div>
       <div class="chart-container" id="container-sharedChart"><canvas id="sharedChart"></canvas></div>
       <div class="chart-container" id="container-amitChart"><canvas id="amitChart"></canvas></div>
@@ -174,7 +180,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="card">
       <div class="card-title">הגדרות תקציב וחוקים</div>
       <div class="field">
-        <label>תקציב משותף חודשי (₪)</label>
+        <label>תקציב משותף חודשי (₪) - השאר ריק או 0 להסתרה</label>
         <input type="number" id="setting-shared-budget" placeholder="0" onchange="saveBudgets()">
       </div>
       <div class="field">
@@ -206,8 +212,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
-// >>> פה אתה חייב לשים את הקישור האמיתי שלך מ-Google Sheets במקום הטקסט <<<
-const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec'
+// >>> הכנס כאן את הכתובת האמיתית שלך מ-Google Sheets במקום הטקסט <<<
+const API = '(https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec)'; 
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 let who = 'עמית';
@@ -406,18 +412,23 @@ function renderSummary() {
   
   const amitShared = sharedList.filter(e => e.who === 'עמית').reduce((s,e) => s+e.amount, 0);
   const elaShared = sharedList.filter(e => e.who === 'אלה').reduce((s,e) => s+e.amount, 0);
+  const amitPersonal = amitPersonalList.reduce((s,e) => s+e.amount, 0);
+  const elaPersonal = elaPersonalList.reduce((s,e) => s+e.amount, 0);
+  
   const totalShared = amitShared + elaShared;
-  const grand = list.reduce((s,e) => s+e.amount, 0);
   
-  const sharedStatusEl = document.getElementById('shared-budget-status');
-  const sharedDiffEl = document.getElementById('shared-budget-diff');
-  sharedStatusEl.textContent = `${fmt(totalShared)} / ${fmt(sharedBudget)}`;
-  
-  if (sharedBudget > 0) {
+  // טיפול בתצוגת תיבת התקציב
+  const budgetBoxEl = document.getElementById('budget-box');
+  if (sharedBudget && sharedBudget > 0) {
+    budgetBoxEl.style.display = 'block';
+    const sharedStatusEl = document.getElementById('shared-budget-status');
+    const sharedDiffEl = document.getElementById('shared-budget-diff');
+    sharedStatusEl.textContent = `${fmt(totalShared)} / ${fmt(sharedBudget)}`;
+    
     const diff = sharedBudget - totalShared;
     if (diff < 0) {
       sharedStatusEl.classList.add('over-budget');
-      sharedDiffEl.textContent = `חריגה מהתקציב المשותף: ${fmt(Math.abs(diff))}`;
+      sharedDiffEl.textContent = `חריגה מהתקציב המשותף: ${fmt(Math.abs(diff))}`;
       sharedDiffEl.classList.add('over-budget');
     } else {
       sharedStatusEl.classList.remove('over-budget');
@@ -425,7 +436,7 @@ function renderSummary() {
       sharedDiffEl.classList.remove('over-budget');
     }
   } else {
-    sharedDiffEl.textContent = 'לא הוגדר תקציב (ניתן להגדיר בהגדרות)';
+    budgetBoxEl.style.display = 'none';
   }
 
   const settlementEl = document.getElementById('settlement-text');
@@ -444,7 +455,8 @@ function renderSummary() {
 
   document.getElementById('amit-shared-total').textContent = fmt(amitShared);
   document.getElementById('ela-shared-total').textContent = fmt(elaShared);
-  document.getElementById('grand-total-summary').textContent = fmt(grand);
+  document.getElementById('amit-personal-total').textContent = fmt(amitPersonal);
+  document.getElementById('ela-personal-total').textContent = fmt(elaPersonal);
 
   function groupByCategory(expList) {
     const obj = {};
