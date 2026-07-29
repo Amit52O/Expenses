@@ -211,7 +211,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
+// הכנס כאן את הקישור האמיתי של ה-Apps Script שלך בתוך המרכאות:
 const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'; 
+
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 let who = 'עמית';
@@ -228,12 +230,38 @@ let elaTarget = parseFloat(localStorage.getItem('my_ela_target')) || 0;
 let chartInstances = { shared: null, amit: null, ela: null };
 const chartColors = ['#2563EB', '#059669', '#F59E0B', '#9D174D', '#8B5CF6', '#EC4899', '#10B981', '#F43F5E', '#3B82F6', '#6366F1'];
 
+// פונקציית הניווט מוגדרת מיד ובצורה גלובלית בטוחה לחלוטין
+window.showTab = function(name, btn) {
+  try {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById('tab-' + name);
+    if (target) target.classList.add('active');
+    if (btn) btn.classList.add('active');
+    render();
+  } catch(e) {
+    console.error("Tab switch error:", e);
+  }
+}
+
 function init() {
-  document.getElementById('date').value = now.toISOString().split('T')[0];
-  document.getElementById('setting-shared-budget').value = sharedBudget || '';
-  document.getElementById('setting-ela-target').value = elaTarget || '';
-  updateLabels();
-  loadFromSheets();
+  try {
+    const dateEl = document.getElementById('date');
+    if (dateEl) dateEl.value = now.toISOString().split('T')[0];
+    
+    const sbEl = document.getElementById('setting-shared-budget');
+    if (sbEl) sbEl.value = sharedBudget || '';
+    
+    const etEl = document.getElementById('setting-ela-target');
+    if (etEl) etEl.value = elaTarget || '';
+    
+    updateLabels();
+    populateCategoryDropdowns();
+    renderCategoriesSettings();
+    loadFromSheets();
+  } catch(err) {
+    console.error("Init error:", err);
+  }
 }
 
 function saveBudgets() {
@@ -267,13 +295,14 @@ function renderCategoriesSettings() {
 }
 
 async function syncCategoriesToServer() {
+  if (API.includes('PUT_YOUR_REAL_LINK_HERE')) return;
   try {
     await fetch(API, { 
       method: 'POST', 
       body: JSON.stringify({ action: 'saveCategories', categories: categories }) 
     });
   } catch(err) {
-    showToast('שגיאה בשמירת קטגוריות בענן', 'error');
+    console.error(err);
   }
 }
 
@@ -299,15 +328,6 @@ async function deleteCategory(index) {
     renderCategoriesSettings();
     showToast('קטגוריה נמחקה מהענן', 'success');
   }
-}
-
-function showTab(name, btn) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const target = document.getElementById('tab-' + name);
-  if (target) target.classList.add('active');
-  if (btn) btn.classList.add('active');
-  render();
 }
 
 function selectWho(name, btn) {
@@ -350,15 +370,15 @@ function getMonthExp() {
 function fmt(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
 
 async function loadFromSheets() {
-  if (API.includes('כאן_צריך_להיות')) return;
+  if (API.includes('PUT_YOUR_REAL_LINK_HERE')) return;
   try {
     const res = await fetch(API);
     const json = await res.json();
-    if (json.success) {
+    if (json && json.success) {
       if (json.categories && json.categories.length > 0) {
         categories = json.categories;
       }
-      expenses = json.data.map(e => ({
+      expenses = (json.data || []).map(e => ({
         id: e.id, date: e.date, who: e.who,
         amount: parseFloat(e.amount), category: e.category, desc: e.desc || '', type: e.type || 'משותפת'
       })).filter(e => e.date && !isNaN(e.amount));
@@ -367,11 +387,11 @@ async function loadFromSheets() {
       renderCategoriesSettings();
       render();
     }
-  } catch(err) { console.error(err); }
+  } catch(err) { console.error('Load error:', err); }
 }
 
 async function addExpense() {
-  if (API.includes('כאן_צריך_להיות')) {
+  if (API.includes('PUT_YOUR_REAL_LINK_HERE')) {
     alert('חסר קישור לשרת!');
     return;
   }
