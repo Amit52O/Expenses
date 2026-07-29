@@ -134,16 +134,6 @@
             background: var(--primary-hover);
         }
 
-        .btn-secondary {
-            background: #e2e8f0;
-            color: var(--text-main);
-            margin-top: 0.5rem;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e1;
-        }
-
         /* Expense List */
         .expense-item {
             display: flex;
@@ -245,6 +235,11 @@
     <div class="container">
         <!-- Dashboard Tab -->
         <div id="tab-dashboard" class="tab-content active">
+            <div class="card" style="margin-bottom: 1rem;">
+                <label>בחר חודש סיכום</label>
+                <select id="month-filter" onchange="render()"></select>
+            </div>
+
             <div class="metrics-grid">
                 <div class="metric-card">
                     <h3>עמית שילם (משותף)</h3>
@@ -265,7 +260,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom: 0.75rem;">סיכום התחשבנות</h3>
+                <h3 style="margin-bottom: 0.75rem;">סיכום התחשבנות לחודש הנבחר</h3>
                 <p id="settlement-text" style="font-size: 0.95rem; line-height: 1.5;">טוען נתונים...</p>
             </div>
         </div>
@@ -321,7 +316,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h3>רשימת הוצאות</h3>
-                    <button class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="loadFromSheets()">רענן מהשרת</button>
+                    <button class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="loadFromSheets()">רענן</button>
                 </div>
                 <div id="expenses-list">
                     <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>
@@ -329,7 +324,7 @@
             </div>
         </div>
 
-        <!-- Settings / Categories Tab -->
+        <!-- Settings Tab -->
         <div id="tab-settings" class="tab-content">
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">ניהול קטגוריות</h3>
@@ -362,7 +357,8 @@
     </nav>
 
     <script>
-        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'
+        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec';
+
         let expenses = [];
         let categories = ["דיור", "סופר", "ריהוט", "פנאי", "סטרימינג ואינטרנט", "חשבונות", "תחבורה", "מתנות ואירועים", "חופשות ונופש", "שונות"];
 
@@ -385,7 +381,7 @@
         }
 
         async function loadFromSheets() {
-            if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+            if (API.includes('הדבק_כאן')) {
                 showToast('שגיאה: חסר קישור לשרת', 'error');
                 return;
             }
@@ -415,6 +411,7 @@
                     
                     populateCategoryDropdowns();
                     renderCategoriesSettings();
+                    updateMonthDropdown();
                     render();
                     showToast('הנתונים נטענו בהצלחה', 'success');
                 } else {
@@ -427,7 +424,7 @@
         }
 
         async function sendToServer(action, payload) {
-            if (API === 'PUT_YOUR_REAL_LINK_HERE') return;
+            if (API.includes('הדבק_כאן')) return;
             try {
                 await fetch(API, {
                     method: 'POST',
@@ -487,6 +484,41 @@
             showToast('הקטגוריה נמחקה');
         }
 
+        function updateMonthDropdown() {
+            const monthSelect = document.getElementById('month-filter');
+            const currentSelected = monthSelect.value;
+            
+            // איסוף חודשים ייחודיים מתוך ההוצאות בפורמט YYYY-MM
+            const monthsSet = new Set();
+            expenses.forEach(e => {
+                if (e.date) {
+                    const ym = e.date.substring(0, 7);
+                    monthsSet.add(ym);
+                }
+            });
+
+            // הוספת החודש הנוכחי אוטומטית אם אין הוצאות עדיין
+            const nowStr = new Date().toISOString().substring(0, 7);
+            monthsSet.add(nowStr);
+
+            const sortedMonths = Array.from(monthsSet).sort().reverse();
+
+            monthSelect.innerHTML = '';
+            sortedMonths.forEach(m => {
+                const [year, month] = m.split('-');
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = `${month}/${year}`;
+                monthSelect.appendChild(opt);
+            });
+
+            if (sortedMonths.includes(currentSelected)) {
+                monthSelect.value = currentSelected;
+            } else {
+                monthSelect.value = nowStr;
+            }
+        }
+
         async function handleFormSubmit(e) {
             e.preventDefault();
             const expense = {
@@ -500,6 +532,7 @@
             };
 
             expenses.push(expense);
+            updateMonthDropdown();
             render();
             
             document.getElementById('amount').value = '';
@@ -512,21 +545,27 @@
 
         async function deleteExpense(id) {
             expenses = expenses.filter(e => e.id !== id);
+            updateMonthDropdown();
             render();
             await sendToServer('delete', { id: id });
             showToast('ההוצאה נמחקה');
         }
 
         function render() {
+            const selectedMonth = document.getElementById('month-filter').value;
+            
+            // סינון הוצאות לפי החודש הנבחר בלבד
+            const filteredExpenses = expenses.filter(e => e.date && e.date.startsWith(selectedMonth));
+
             let amitShared = 0, elaShared = 0, amitPersonal = 0, elaPersonal = 0;
             const listEl = document.getElementById('expenses-list');
             listEl.innerHTML = '';
 
-            if (expenses.length === 0) {
-                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>';
+            if (filteredExpenses.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות לחודש זה.</p>';
             }
 
-            const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sorted = [...filteredExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
 
             sorted.forEach(e => {
                 if (e.type === 'משותפת') {
@@ -562,15 +601,15 @@
             const settlementText = document.getElementById('settlement-text');
 
             if (totalShared === 0) {
-                settlementText.textContent = 'אין עדיין הוצאות משותפות להתחשבנות.';
+                settlementText.textContent = 'אין עדיין הוצאות משותפות להתחשבנות לחודש זה.';
             } else {
                 const diff = amitShared - targetPerPerson;
                 if (Math.abs(diff) < 0.01) {
-                    settlementText.textContent = 'ההוצאות המשותפות מאוזנות לחלוטין! אין הפרשים.';
+                    settlementText.textContent = 'ההוצאות המשותפות לחודש זה מאוזנות לחלוטין! אין הפרשים.';
                 } else if (diff > 0) {
-                    settlementText.textContent = `אלה צריכה להעביר לעמית ₪${diff.toFixed(2)} כדי לאזן את ההוצאות המשותפות.`;
+                    settlementText.textContent = `אלה צריכה להעביר לעמית ₪${diff.toFixed(2)} כדי לאזן את ההוצאות החודש.`;
                 } else {
-                    settlementText.textContent = `עמית צריך להעביר לאלה ₪${Math.abs(diff).toFixed(2)} כדי לאזן את ההוצאות המשותפות.`;
+                    settlementText.textContent = `עמית צריך להעביר לאלה ₪${Math.abs(diff).toFixed(2)} כדי לאזן את ההוצאות החודש.`;
                 }
             }
         }
