@@ -134,6 +134,16 @@
             background: var(--primary-hover);
         }
 
+        .btn-secondary {
+            background: #e2e8f0;
+            color: var(--text-main);
+            margin-top: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
         /* Expense List */
         .expense-item {
             display: flex;
@@ -311,7 +321,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h3>רשימת הוצאות</h3>
-                    <button class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="loadFromSheets()">רענן</button>
+                    <button class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="loadFromSheets()">רענן מהשרת</button>
                 </div>
                 <div id="expenses-list">
                     <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>
@@ -319,7 +329,7 @@
             </div>
         </div>
 
-        <!-- Settings Tab -->
+        <!-- Settings / Categories Tab -->
         <div id="tab-settings" class="tab-content">
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">ניהול קטגוריות</h3>
@@ -352,7 +362,10 @@
     </nav>
 
     <script>
-        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'
+        // ==========================================
+        
+        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec';
+
         let expenses = [];
         let categories = ["דיור", "סופר", "ריהוט", "פנאי", "סטרימינג ואינטרנט", "חשבונות", "תחבורה", "מתנות ואירועים", "חופשות ונופש", "שונות"];
 
@@ -516,6 +529,7 @@
                 listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>';
             }
 
+            // מיון לפי תאריך חדש ישן
             const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
 
             sorted.forEach(e => {
@@ -547,6 +561,7 @@
             document.getElementById('metric-amit-personal').textContent = '₪' + amitPersonal.toFixed(2);
             document.getElementById('metric-ela-personal').textContent = '₪' + elaPersonal.toFixed(2);
 
+            // חישוב התחשבנות
             const totalShared = amitShared + elaShared;
             const targetPerPerson = totalShared / 2;
             const settlementText = document.getElementById('settlement-text');
@@ -565,6 +580,7 @@
             }
         }
 
+        // טעינת נתונים ראשונית עם פתיחת העמוד
         window.onload = () => {
             populateCategoryDropdowns();
             renderCategoriesSettings();
