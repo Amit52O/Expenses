@@ -68,6 +68,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 .cat-item-edit { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 .cat-item-edit:last-child { border-bottom: none; }
+.add-cat-row { display: flex; gap: 8px; margin-top: 10px; }
+.add-cat-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; }
+.add-cat-row button { background: #1a1a1a; color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; }
 
 .chart-container { position: relative; width: 100%; max-width: 300px; margin: 0 auto 1.5rem auto; display: none; }
 </style>
@@ -187,9 +190,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
 
     <div class="card">
-      <div class="card-title">קטגוריות מוגדרות</div>
-      <div style="font-size:12px; color:#888; margin-bottom:12px;">הקטגוריות קבועות ואחידות לשני המכשירים דרך קוד המערכת.</div>
+      <div class="card-title">ניהול קטגוריות (משותף לשניכם)</div>
+      <div style="font-size:12px; color:#888; margin-bottom:12px;">הוספה או מחיקה פה תתעדכן אוטומטית אצל שתיכם.</div>
       <div id="categories-edit-list"></div>
+      
+      <div class="add-cat-row">
+        <input type="text" id="new-cat-input" placeholder="שם קטגוריה חדשה">
+        <button onclick="addNewCategory()">הוסף</button>
+      </div>
     </div>
   </div>
 </div>
@@ -204,7 +212,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbwLRDfOwDvrf3AD2Ub3_v22sBOeu9OeUBe3CToEuFGYA-s4PxzKRCApYcUV1c3kJfaJAQ/exec'; 
+const API = 'https://script.google.com/macros/library/d/1__pfl7R6f2fGSs0GQZa_HcuRKgoQ98neCpptCKjqm5Tm3DgoYQcbN8RE/3'; 
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 let who = 'עמית';
@@ -213,9 +221,7 @@ let now = new Date();
 let viewMonth = now.getMonth();
 let viewYear = now.getFullYear();
 let expenses = [];
-
-// קטגוריות אחידות קבועות מראש לשני המכשירים
-const categories = ['דיור', 'סופר', 'ריהוט', 'פנאי', 'סטרימינג ואינטרנט', 'חשבונות', 'תחבורה', 'מתנות ואירועים', 'חופשות ונופש', 'שונות'];
+let categories = ['דיור', 'סופר', 'ריהוט', 'פנאי', 'סטרימינג ואינטרנט', 'חשבונות', 'תחבורה', 'מתנות ואירועים', 'חופשות ונופש', 'שונות'];
 
 let sharedBudget = parseFloat(localStorage.getItem('my_shared_budget')) || 0;
 let elaTarget = parseFloat(localStorage.getItem('my_ela_target')) || 0;
@@ -227,10 +233,8 @@ function init() {
   document.getElementById('date').value = now.toISOString().split('T')[0];
   document.getElementById('setting-shared-budget').value = sharedBudget || '';
   document.getElementById('setting-ela-target').value = elaTarget || '';
-  populateCategoryDropdowns();
   updateLabels();
   loadFromSheets();
-  renderCategoriesSettings();
 }
 
 function saveBudgets() {
@@ -253,11 +257,47 @@ function populateCategoryDropdowns() {
 
 function renderCategoriesSettings() {
   const listEl = document.getElementById('categories-edit-list');
-  listEl.innerHTML = categories.map(cat => `
+  listEl.innerHTML = categories.map((cat, index) => `
     <div class="cat-item-edit">
       <span>${cat}</span>
+      <button class="del-btn" onclick="deleteCategory(${index})">✕</button>
     </div>
   `).join('');
+}
+
+async function syncCategoriesToServer() {
+  try {
+    await fetch(API, { 
+      method: 'POST', 
+      body: JSON.stringify({ action: 'saveCategories', categories: categories }) 
+    });
+  } catch(err) {
+    showToast('שגיאה בשמירת קטגוריות בענן', 'error');
+  }
+}
+
+async function addNewCategory() {
+  const input = document.getElementById('new-cat-input');
+  const val = input.value.trim();
+  if (!val) return;
+  if (categories.includes(val)) { alert('הקטגוריה כבר קיימת'); return; }
+  categories.push(val);
+  await syncCategoriesToServer();
+  populateCategoryDropdowns();
+  renderCategoriesSettings();
+  input.value = '';
+  showToast('קטגוריה נוספה ועודכנה בענן', 'success');
+}
+
+async function deleteCategory(index) {
+  if (categories.length <= 1) { alert('חייבת להישאר לפחות קטגוריה אחת'); return; }
+  if (confirm('למחוק את הקטגוריה הזו?')) {
+    categories.splice(index, 1);
+    await syncCategoriesToServer();
+    populateCategoryDropdowns();
+    renderCategoriesSettings();
+    showToast('קטגוריה נמחקה מהענן', 'success');
+  }
 }
 
 function showTab(name, btn) {
@@ -314,10 +354,16 @@ async function loadFromSheets() {
     const res = await fetch(API);
     const json = await res.json();
     if (json.success) {
+      if (json.categories && json.categories.length > 0) {
+        categories = json.categories;
+      }
       expenses = json.data.map(e => ({
         id: e.id, date: e.date, who: e.who,
         amount: parseFloat(e.amount), category: e.category, desc: e.desc || '', type: e.type || 'משותפת'
       })).filter(e => e.date && !isNaN(e.amount));
+      
+      populateCategoryDropdowns();
+      renderCategoriesSettings();
       render();
     }
   } catch(err) { showToast('שגיאה בטעינה', 'error'); }
@@ -331,7 +377,7 @@ async function addExpense() {
   const amount = parseFloat(document.getElementById('amount').value);
   const category = document.getElementById('category').value;
   const desc = document.getElementById('desc').value.trim();
-  const date = document.getElementById('date').value;
+  const date = document.getElementById('date'].value;
   if (!amount || amount <= 0) { alert('נא להזין סכום תקין'); return; }
   if (!date) { alert('נא לבחור תאריך'); return; }
   
