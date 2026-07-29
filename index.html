@@ -352,7 +352,8 @@
     </nav>
 
     <script>
-        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'
+        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec';
+
         let expenses = [];
         let categories = ["דיור", "סופר", "ריהוט", "פנאי", "סטרימינג ואינטרנט", "חשבונות", "תחבורה", "מתנות ואירועים", "חופשות ונופש", "שונות"];
 
@@ -375,7 +376,7 @@
         }
 
         async function loadFromSheets() {
-            if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+            if (API.includes('הדבק_כאן')) {
                 showToast('שגיאה: חסר קישור לשרת', 'error');
                 return;
             }
@@ -417,7 +418,7 @@
         }
 
         async function sendToServer(action, payload) {
-            if (API === 'PUT_YOUR_REAL_LINK_HERE') return;
+            if (API.includes('הדבק_כאן')) return;
             try {
                 await fetch(API, {
                     method: 'POST',
