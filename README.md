@@ -1,577 +1,585 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>מעקב הוצאות - עמית ואלה</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; direction: rtl; }
-.app { max-width: 430px; margin: 0 auto; padding: 1rem; min-height: 100vh; padding-bottom: 90px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; padding-top: 0.5rem; }
-.header h1 { font-size: 21px; font-weight: 700; }
-.header span { font-size: 13px; color: #888; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ניהול הוצאות משותפות</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
 
-/* Bottom nav */
-.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: white; border-top: 1px solid #eee; display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
-.nav-btn { flex: 1; padding: 10px 4px 8px; border: none; background: transparent; font-size: 11px; color: #aaa; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.nav-btn.active { color: #1a1a1a; font-weight: 600; }
-.nav-icon { font-size: 20px; line-height: 1; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
 
-.section { display: none; }
-.section.active { display: block; }
-.card { background: white; border: 1px solid #eee; border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; }
-.card-title { font-size: 14px; font-weight: 700; color: #444; margin-bottom: 12px; }
-.field { margin-bottom: 1rem; }
-.field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
-.field input, .field select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; background: white; outline: none; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 80px;
+        }
 
-.who-btns { display: flex; gap: 8px; }
-.who-btn { flex: 1; padding: 10px 4px; border: 1px solid #ddd; border-radius: 10px; background: white; font-size: 15px; cursor: pointer; color: #666; font-weight: 500; }
-.who-btn.amit.active { background: #EBF4FF; border-color: #2563EB; color: #1D4ED8; }
-.who-btn.ela.active { background: #FDF2F8; border-color: #9D174D; color: #831843; }
-.who-btn.shared.active { background: #F0FDF4; border-color: #059669; color: #065F46; }
-.who-btn.personal.active { background: #FFF7ED; border-color: #C2410C; color: #9A3412; }
+        header {
+            background: var(--card-bg);
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
 
-.add-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: #1a1a1a; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
 
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-.metric { background: white; border: 1px solid #eee; border-radius: 14px; padding: 1rem; }
-.metric-label { font-size: 12px; color: #888; margin-bottom: 4px; font-weight: 500; }
-.metric-value { font-size: 21px; font-weight: 700; color: #1a1a1a; }
-.metric-sub { font-size: 12px; margin-top: 3px; color: #888; }
+        .tab-content {
+            display: none;
+        }
 
-.over-budget { color: #DC2626 !important; }
-.budget-box { background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 12px; margin-bottom: 1rem; text-align: center; display: none; }
+        .tab-content.active {
+            display: block;
+        }
 
-.month-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 1rem; }
-.month-btn { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 5px 14px; cursor: pointer; color: #666; font-size: 18px; }
-.month-label { font-size: 16px; font-weight: 600; min-width: 110px; text-align: center; }
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
 
-.expense-list { display: flex; flex-direction: column; gap: 8px; }
-.expense-item { background: white; border: 1px solid #eee; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; }
-.exp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-left: 10px; }
-.dot-amit { background: #2563EB; }
-.dot-ela { background: #9D174D; }
-.dot-shared { background: #059669; }
-.exp-desc { font-size: 15px; font-weight: 500; }
-.exp-meta { font-size: 12px; color: #888; margin-top: 2px; }
-.del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; padding: 2px 6px; }
-.empty { text-align: center; padding: 3rem 1rem; color: #aaa; font-size: 15px; }
+        .metric-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
 
-.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); color: white; padding: 11px 22px; border-radius: 12px; font-size: 15px; font-weight: 500; opacity: 0; transition: opacity 0.3s; z-index: 999; pointer-events: none; }
-.toast.success { background: #059669; }
-.toast.error { background: #DC2626; }
-.toast.show { opacity: 1; }
+        .metric-card h3 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
 
-.cat-item-edit { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-.cat-item-edit:last-child { border-bottom: none; }
-.add-cat-row { display: flex; gap: 8px; margin-top: 10px; }
-.add-cat-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
-.add-cat-row button { background: #1a1a1a; color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; cursor: pointer; }
+        .metric-card .value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
 
-.chart-container { position: relative; width: 100%; max-width: 300px; margin: 0 auto 1.5rem auto; display: none; }
-</style>
+        /* Forms & Inputs */
+        .card {
+            background: var(--card-bg);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            background: #fff;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: var(--text-main);
+            margin-top: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        /* Expense List */
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+
+        .expense-info h4 {
+            font-size: 1rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .expense-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .expense-amount {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        /* Navigation Bar */
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.5rem 0;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .nav-item span {
+            font-size: 1.2rem;
+        }
+
+        /* Toast Notifications */
+        #toast {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--text-main);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+            z-index: 2000;
+            font-size: 0.9rem;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <h1>מעקב הוצאות</h1>
-    <span id="header-month"></span>
-  </div>
 
-  <div id="tab-add" class="section active">
-    <div class="card">
-      <div class="field">
-        <label>מי שילם?</label>
-        <div class="who-btns">
-          <button class="who-btn amit active" onclick="selectWho('עמית',this)">עמית</button>
-          <button class="who-btn ela" onclick="selectWho('אלה',this)">אלה</button>
+    <header>ניהול הוצאות משותפות</header>
+
+    <div id="toast">הודעה</div>
+
+    <div class="container">
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>עמית שילם (משותף)</h3>
+                    <div class="value" id="metric-amit-shared">₪0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>אלה שילמה (משותף)</h3>
+                    <div class="value" id="metric-ela-shared">₪0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>הוצאות אישיות עמית</h3>
+                    <div class="value" id="metric-amit-personal">₪0</div>
+                </div>
+                <div class="metric-card">
+                    <h3>הוצאות אישיות אלה</h3>
+                    <div class="value" id="metric-ela-personal">₪0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 0.75rem;">סיכום התחשבנות</h3>
+                <p id="settlement-text" style="font-size: 0.95rem; line-height: 1.5;">טוען נתונים...</p>
+            </div>
         </div>
-      </div>
-      <div class="field">
-        <label>סוג הוצאה</label>
-        <div class="who-btns">
-          <button class="who-btn shared active" onclick="selectType('משותפת',this)">משותפת 🤝</button>
-          <button class="who-btn personal" onclick="selectType('אישית',this)">אישית 👤</button>
+
+        <!-- Add Expense Tab -->
+        <div id="tab-add" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">הוספת הוצאה חדשה</h3>
+                <form id="expense-form" onsubmit="handleFormSubmit(event)">
+                    <div class="form-group">
+                        <label>מי שילם?</label>
+                        <select id="who">
+                            <option value="עמית">עמית</option>
+                            <option value="אלה">אלה</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>סכום (₪)</label>
+                        <input type="number" id="amount" step="0.01" required placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label>קטגוריה</label>
+                        <select id="category"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>סוג הוצאה</label>
+                        <select id="type">
+                            <option value="משותפת">משותפת (50/50)</option>
+                            <option value="אישית">אישית</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>תאריך</label>
+                        <input type="date" id="date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>תיאור (אופציונלי)</label>
+                        <input type="text" id="desc" placeholder="למשל: קניות בסופר">
+                    </div>
+
+                    <button type="submit" class="btn">שמור הוצאה</button>
+                </form>
+            </div>
         </div>
-      </div>
-      <div class="field">
-        <label>סכום (₪)</label>
-        <input type="number" id="amount" placeholder="0" min="0" step="0.01" inputmode="decimal">
-      </div>
-      <div class="field">
-        <label>קטגוריה</label>
-        <select id="category"></select> 
-      </div>
-      <div class="field">
-        <label>תיאור (אופציונלי)</label>
-        <input type="text" id="desc" placeholder="למשל: קניות בשוק">
-      </div>
-      <div class="field">
-        <label>תאריך</label>
-        <input type="date" id="date">
-      </div>
-      <button class="add-btn" id="add-btn" onclick="addExpense()">+ הוסף הוצאה</button>
-    </div>
-  </div>
 
-  <div id="tab-summary" class="section">
-    <div class="month-nav">
-      <button class="month-btn" onclick="changeMonth(-1)">&#8249;</button>
-      <span class="month-label" id="summary-month"></span>
-      <button class="month-btn" onclick="changeMonth(1)">&#8250;</button>
-    </div>
-    
-    <div class="budget-box" id="budget-box">
-      <div class="metric-label">תקציב משותף חודשי</div>
-      <div class="metric-value" id="shared-budget-status">₪0 / ₪0</div>
-      <div class="metric-sub" id="shared-budget-diff">נשאר לתקציב: ₪0</div>
-    </div>
-
-    <div class="card" style="background: #EFF6FF; border-color: #BFDBFE;">
-      <div class="card-title" style="color: #1E40AF;">סטטוס החזרים</div>
-      <div style="font-size: 14px; color: #1E3A8A;" id="settlement-text">טוען נתונים...</div>
-    </div>
-
-    <div class="grid2">
-      <div class="metric">
-        <div class="metric-label">עמית (משותף)</div>
-        <div class="metric-value" id="amit-shared-total">₪0</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">אלה (משותף)</div>
-        <div class="metric-value" id="ela-shared-total">₪0</div>
-      </div>
-    </div>
-
-    <div class="grid2">
-      <div class="metric">
-        <div class="metric-label">עמית (אישי)</div>
-        <div class="metric-value" id="amit-personal-total">₪0</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">אלה (אישי)</div>
-        <div class="metric-value" id="ela-personal-total">₪0</div>
-      </div>
-    </div>
-
-    <div class="card" id="charts-card" style="margin-top: 1rem;">
-      <div class="card-title" style="text-align:center; margin-bottom: 20px;">פילוג הוצאות חודשי</div>
-      <div class="chart-container" id="container-sharedChart"><canvas id="sharedChart"></canvas></div>
-      <div class="chart-container" id="container-amitChart"><canvas id="amitChart"></canvas></div>
-      <div class="chart-container" id="container-elaChart"><canvas id="elaChart"></canvas></div>
-    </div>
-  </div>
-
-  <div id="tab-list" class="section">
-    <div class="month-nav">
-      <button class="month-btn" onclick="changeMonth(-1)">&#8249;</button>
-      <span class="month-label" id="list-month"></span>
-      <button class="month-btn" onclick="changeMonth(1)">&#8250;</button>
-    </div>
-    <button class="add-btn" style="background:#ddd; color:#333; margin-bottom:1rem;" onclick="loadFromSheets()">רענן רשימה מהשרת</button>
-    <div class="expense-list" id="expense-list"></div>
-  </div>
-
-  <div id="tab-settings" class="section">
-    <div class="card">
-      <div class="card-title">הגדרות תקציב וחוקים</div>
-      <div class="field">
-        <label>תקציב משותף חודשי (₪) - השאר ריק או 0 להסתרה</label>
-        <input type="number" id="setting-shared-budget" placeholder="0" onchange="saveBudgets()">
-      </div>
-      <div class="field">
-        <label>יעד הוצאה משותפת לאלה (₪) - השאר ריק או 0 לחלוקה שווה</label>
-        <input type="number" id="setting-ela-target" placeholder="0" onchange="saveBudgets()">
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">ניהול קטגוריות (משותף לשניכם)</div>
-      <div style="font-size:12px; color:#888; margin-bottom:12px;">הוספה או מחיקה פה תתעדכן אוטומטית אצל שתיכם.</div>
-      <div id="categories-edit-list"></div>
-      
-      <div class="add-cat-row">
-        <input type="text" id="new-cat-input" placeholder="שם קטגוריה חדשה">
-        <button onclick="addNewCategory()">הוסף</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="bottom-nav">
-  <button class="nav-btn active" onclick="showTab('add',this)"><span class="nav-icon">➕</span>הוסף</button>
-  <button class="nav-btn" onclick="showTab('summary',this)"><span class="nav-icon">📊</span>סיכום</button>
-  <button class="nav-btn" onclick="showTab('list',this)"><span class="nav-icon">📋</span>רשימה</button>
-  <button class="nav-btn" onclick="showTab('settings',this)"><span class="nav-icon">⚙️</span>הגדרות</button>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'; 
-const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-
-let who = 'עמית';
-let expenseType = 'משותפת';
-let now = new Date();
-let viewMonth = now.getMonth();
-let viewYear = now.getFullYear();
-let expenses = [];
-let categories = ['דיור', 'סופר', 'ריהוט', 'פנאי', 'סטרימינג ואינטרנט', 'חשבונות', 'תחבורה', 'מתנות ואירועים', 'חופשות ונופש', 'שונות'];
-
-let sharedBudget = parseFloat(localStorage.getItem('my_shared_budget')) || 0;
-let elaTarget = parseFloat(localStorage.getItem('my_ela_target')) || 0;
-
-let chartInstances = { shared: null, amit: null, ela: null };
-const chartColors = ['#2563EB', '#059669', '#F59E0B', '#9D174D', '#8B5CF6', '#EC4899', '#10B981', '#F43F5E', '#3B82F6', '#6366F1'];
-
-function init() {
-  document.getElementById('date').value = now.toISOString().split('T')[0];
-  document.getElementById('setting-shared-budget').value = sharedBudget || '';
-  document.getElementById('setting-ela-target').value = elaTarget || '';
-  updateLabels();
-  loadFromSheets();
-}
-
-function saveBudgets() {
-  const sbVal = document.getElementById('setting-shared-budget').value.trim();
-  sharedBudget = (sbVal === '' || isNaN(sbVal)) ? 0 : parseFloat(sbVal);
-  
-  const etVal = document.getElementById('setting-ela-target').value.trim();
-  elaTarget = (etVal === '' || isNaN(etVal)) ? 0 : parseFloat(etVal);
-
-  localStorage.setItem('my_shared_budget', sharedBudget);
-  localStorage.setItem('my_ela_target', elaTarget);
-  showToast('הגדרות התקציב נשמרו', 'success');
-  renderSummary();
-}
-
-function populateCategoryDropdowns() {
-  const select = document.getElementById('category');
-  if (!select) return;
-  select.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-}
-
-function renderCategoriesSettings() {
-  const listEl = document.getElementById('categories-edit-list');
-  if (!listEl) return;
-  listEl.innerHTML = categories.map((cat, index) => `
-    <div class="cat-item-edit">
-      <span>${cat}</span>
-      <button class="del-btn" onclick="deleteCategory(${index})">✕</button>
-    </div>
-  `).join('');
-}
-
-async function syncCategoriesToServer() {
-  try {
-    await fetch(API, { 
-      method: 'POST', 
-      body: JSON.stringify({ action: 'saveCategories', categories: categories }) 
-    });
-  } catch(err) {
-    showToast('שגיאה בשמירת קטגוריות בענן', 'error');
-  }
-}
-
-async function addNewCategory() {
-  const input = document.getElementById('new-cat-input');
-  const val = input.value.trim();
-  if (!val) return;
-  if (categories.includes(val)) { alert('הקטגוריה כבר קיימת'); return; }
-  categories.push(val);
-  await syncCategoriesToServer();
-  populateCategoryDropdowns();
-  renderCategoriesSettings();
-  input.value = '';
-  showToast('קטגוריה נוספה ועודכנה בענן', 'success');
-}
-
-async function deleteCategory(index) {
-  if (categories.length <= 1) { alert('חייבת להישאר לפחות קטגוריה אחת'); return; }
-  if (confirm('למחוק את הקטגוריה הזו?')) {
-    categories.splice(index, 1);
-    await syncCategoriesToServer();
-    populateCategoryDropdowns();
-    renderCategoriesSettings();
-    showToast('קטגוריה נמחקה מהענן', 'success');
-  }
-}
-
-function showTab(name, btn) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const target = document.getElementById('tab-' + name);
-  if (target) target.classList.add('active');
-  if (btn) btn.classList.add('active');
-  render();
-}
-
-function selectWho(name, btn) {
-  who = name;
-  btn.closest('.who-btns').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-function selectType(type, btn) {
-  expenseType = type;
-  btn.closest('.who-btns').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-function changeMonth(dir) {
-  viewMonth += dir;
-  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-  updateLabels();
-  render();
-}
-
-function updateLabels() {
-  const label = MONTHS[viewMonth] + ' ' + viewYear;
-  const hMonth = document.getElementById('header-month');
-  const sMonth = document.getElementById('summary-month');
-  const lMonth = document.getElementById('list-month');
-  if (hMonth) hMonth.textContent = label;
-  if (sMonth) sMonth.textContent = label;
-  if (lMonth) lMonth.textContent = label;
-}
-
-function getMonthExp() {
-  return expenses.filter(e => {
-    const d = new Date(e.date);
-    return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
-  });
-}
-
-function fmt(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
-
-async function loadFromSheets() {
-  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
-    showToast('שגיאה: חסר קישור לשרת', 'error');
-    return;
-  }
-  showToast('טוען נתונים...', 'success');
-  try {
-    const res = await fetch(API);
-    const json = await res.json();
-    if (json.success) {
-      if (json.categories && json.categories.length > 0) {
-        categories = json.categories;
-      }
-      expenses = json.data.map(e => ({
-        id: e.id, date: e.date, who: e.who,
-        amount: parseFloat(e.amount), category: e.category, desc: e.desc || '', type: e.type || 'משותפת'
-      })).filter(e => e.date && !isNaN(e.amount));
-      
-      populateCategoryDropdowns();
-      renderCategoriesSettings();
-      render();
-    }
-  } catch(err) { showToast('שגיאה בטעינה', 'error'); }
-}
-
-async function addExpense() {
-  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
-    alert('חסר קישור לשרת! נא לעדכן בקוד.');
-    return;
-  }
-  const amount = parseFloat(document.getElementById('amount').value);
-  const category = document.getElementById('category').value;
-  const desc = document.getElementById('desc').value.trim();
-  const date = document.getElementById('date').value;
-  if (!amount || amount <= 0) { alert('נא להזין סכום תקין'); return; }
-  if (!date) { alert('נא לבחור תאריך'); return; }
-  
-  const btn = document.getElementById('add-btn');
-  btn.disabled = true; btn.textContent = 'שומר...';
-  
-  const expense = { id: Date.now(), who, amount, category, desc, date, type: expenseType };
-  try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'add', ...expense }) });
-    expenses.push(expense);
-    document.getElementById('amount').value = '';
-    document.getElementById('desc').value = '';
-    showToast('ההוצאה נוספה', 'success');
-    render();
-  } catch(err) { showToast('שגיאה בשמירה', 'error'); }
-  btn.disabled = false; btn.textContent = '+ הוסף הוצאה';
-}
-
-async function deleteExpense(id) {
-  if (!confirm('למחוק את ההוצאה?')) return;
-  try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'delete', id }) });
-    expenses = expenses.filter(e => String(e.id) !== String(id));
-    render();
-    showToast('נמחק', 'success');
-  } catch(err) { showToast('שגיאה במחיקה', 'error'); }
-}
-
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.className = 'toast ' + type + ' show';
-  setTimeout(() => t.classList.remove('show'), 2500);
-}
-
-function render() {
-  renderSummary();
-  renderList();
-}
-
-function renderSummary() {
-  const list = getMonthExp();
-  
-  const sharedList = list.filter(e => !e.type || e.type === 'משותפת');
-  const amitPersonalList = list.filter(e => e.type === 'אישית' && e.who === 'עמית');
-  const elaPersonalList = list.filter(e => e.type === 'אישית' && e.who === 'אלה');
-  
-  const amitShared = sharedList.filter(e => e.who === 'עמית').reduce((s,e) => s+e.amount, 0);
-  const elaShared = sharedList.filter(e => e.who === 'אלה').reduce((s,e) => s+e.amount, 0);
-  const amitPersonal = amitPersonalList.reduce((s,e) => s+e.amount, 0);
-  const elaPersonal = elaPersonalList.reduce((s,e) => s+e.amount, 0);
-  
-  const totalShared = amitShared + elaShared;
-  
-  const budgetBoxEl = document.getElementById('budget-box');
-  if (sharedBudget && sharedBudget > 0) {
-    if (budgetBoxEl) budgetBoxEl.style.display = 'block';
-    const sharedStatusEl = document.getElementById('shared-budget-status');
-    const sharedDiffEl = document.getElementById('shared-budget-diff');
-    if (sharedStatusEl) sharedStatusEl.textContent = `${fmt(totalShared)} / ${fmt(sharedBudget)}`;
-    
-    const diff = sharedBudget - totalShared;
-    if (diff < 0) {
-      if (sharedStatusEl) sharedStatusEl.classList.add('over-budget');
-      if (sharedDiffEl) {
-        sharedDiffEl.textContent = `חריגה מהתקציב המשותף: ${fmt(Math.abs(diff))}`;
-        sharedDiffEl.classList.add('over-budget');
-      }
-    } else {
-      if (sharedStatusEl) sharedStatusEl.classList.remove('over-budget');
-      if (sharedDiffEl) {
-        sharedDiffEl.textContent = `נשאר לתקציב המשותף: ${fmt(diff)}`;
-        sharedDiffEl.classList.remove('over-budget');
-      }
-    }
-  } else {
-    if (budgetBoxEl) budgetBoxEl.style.display = 'none';
-  }
-
-  const settlementEl = document.getElementById('settlement-text');
-  if (settlementEl) {
-    if (elaTarget > 0) {
-      const refund = elaShared - elaTarget;
-      if (refund > 0) {
-        settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות (היעד: ${fmt(elaTarget)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(refund)}</strong>`;
-      } else if (refund < 0) {
-        settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות.<br>אלה יכולה לשלם עוד <strong>${fmt(Math.abs(refund))}</strong> עד שתגיע ליעד.`;
-      } else {
-        settlementEl.innerHTML = `אלה שילמה בדיוק <strong>${fmt(elaShared)}</strong> לפי היעד. אין צורך בהחזרים.`;
-      }
-    } else {
-      const targetPerPerson = totalShared / 2;
-      const diffAmit = amitShared - targetPerPerson;
-      
-      if (totalShared === 0) {
-        settlementEl.textContent = 'אין הוצאות משותפות החודש.';
-      } else if (Math.abs(diffAmit) < 0.5) {
-        settlementEl.innerHTML = `ההוצאות המשותפות מתחלקות שווה בשווה (סה"כ ${fmt(totalShared)}).<br>✨ <strong>החשבון מאוזן לגמרי!</strong>`;
-      } else if (diffAmit > 0) {
-        settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>אלה צריכה להחזיר לעמית: ${fmt(diffAmit)}</strong>`;
-      } else {
-        settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(Math.abs(diffAmit))}</strong>`;
-      }
-    }
-  }
-
-  const asTot = document.getElementById('amit-shared-total');
-  const esTot = document.getElementById('ela-shared-total');
-  const apTot = document.getElementById('amit-personal-total');
-  const epTot = document.getElementById('ela-personal-total');
-  if (asTot) asTot.textContent = fmt(amitShared);
-  if (esTot) esTot.textContent = fmt(elaShared);
-  if (apTot) apTot.textContent = fmt(amitPersonal);
-  if (epTot) epTot.textContent = fmt(elaPersonal);
-
-  function groupByCategory(expList) {
-    const obj = {};
-    expList.forEach(e => { obj[e.category] = (obj[e.category] || 0) + e.amount; });
-    return obj;
-  }
-
-  drawPieChart('shared', 'sharedChart', 'container-sharedChart', 'פילוג הוצאות משותפות', groupByCategory(sharedList));
-  drawPieChart('amit', 'amitChart', 'container-amitChart', 'הוצאות אישיות - עמית', groupByCategory(amitPersonalList));
-  drawPieChart('ela', 'elaChart', 'container-elaChart', 'הוצאות אישיות - אלה', groupByCategory(elaPersonalList));
-}
-
-function drawPieChart(instanceName, canvasId, containerId, title, dataObj) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  const labels = Object.keys(dataObj);
-  const data = Object.values(dataObj);
-
-  if (labels.length === 0) {
-    container.style.display = 'none';
-    return;
-  }
-  
-  container.style.display = 'block';
-
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (chartInstances[instanceName]) { chartInstances[instanceName].destroy(); }
-
-  chartInstances[instanceName] = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: labels,
-      datasets: [{ data: data, backgroundColor: chartColors, borderWidth: 1 }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { family: 'inherit' } } },
-        title: { display: true, text: title, font: { family: 'inherit', size: 14, weight: 'bold' } }
-      }
-    }
-  });
-}
-
-function renderList() {
-  const list = getMonthExp().slice().reverse();
-  const el = document.getElementById('expense-list');
-  if (!el) return;
-  if (!list.length) { el.innerHTML = '<div class="empty">אין הוצאות בחודש זה</div>'; return; }
-  
-  const dotClass = { 'עמית': 'dot-amit', 'אלה': 'dot-ela' };
-  el.innerHTML = list.map(e => {
-    const d = new Date(e.date);
-    const dateStr = d.getDate() + '/' + (d.getMonth()+1);
-    return `<div class="expense-item">
-      <div style="display:flex;align-items:center;flex:1">
-        <div class="exp-dot ${dotClass[e.who]||'dot-shared'}"></div>
-        <div>
-          <div class="exp-desc">${e.desc||e.category}</div>
-          <div class="exp-meta">${e.who} · ${e.type||'משותפת'} · ${e.category} · ${dateStr}</div>
+        <!-- List Tab -->
+        <div id="tab-list" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>רשימת הוצאות</h3>
+                    <button class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="loadFromSheets()">רענן מהשרת</button>
+                </div>
+                <div id="expenses-list">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>
+                </div>
+            </div>
         </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:15px;font-weight:700">${fmt(e.amount)}</span>
-        <button class="del-btn" onclick="deleteExpense(${e.id})">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-}
 
-init();
-</script>
+        <!-- Settings / Categories Tab -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">ניהול קטגוריות</h3>
+                <div class="form-group">
+                    <label>הוסף קטגוריה חדשה</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="new-category-input" placeholder="שם הקטגוריה...">
+                        <button class="btn" style="width: auto; padding: 0 1rem;" onclick="addCategory()">הוסף</button>
+                    </div>
+                </div>
+                <div id="categories-settings-list" style="margin-top: 1rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+        <button class="nav-item active" onclick="switchTab('dashboard', this)">
+            <span>📊</span>סיכום
+        </button>
+        <button class="nav-item" onclick="switchTab('add', this)">
+            <span>➕</span>הוספה
+        </button>
+        <button class="nav-item" onclick="switchTab('list', this)">
+            <span>📋</span>רשימה
+        </button>
+        <button class="nav-item" onclick="switchTab('settings', this)">
+            <span>⚙️</span>הגדרות
+        </button>
+    </nav>
+
+    <script>
+        const API = 'https://script.google.com/macros/s/AKfycbxhGbyXIDOfFMWk02oKgefVkA84QuxaqWoQ6fNrlZcpfWM8WL-DILpRM1qJZx8gN8Tnjg/exec'
+        let expenses = [];
+        let categories = ["דיור", "סופר", "ריהוט", "פנאי", "סטרימינג ואינטרנט", "חשבונות", "תחבורה", "מתנות ואירועים", "חופשות ונופש", "שונות"];
+
+        document.getElementById('date').valueAsDate = new Date();
+
+        function showToast(text, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = text;
+            toast.style.background = type === 'error' ? 'var(--danger)' : 'var(--text-main)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        async function loadFromSheets() {
+            if (API === 'PUT_YOUR_REAL_LINK_HERE') {
+                showToast('שגיאה: חסר קישור לשרת', 'error');
+                return;
+            }
+            showToast('טוען נתונים...', 'success');
+            try {
+                const res = await fetch(API);
+                const json = await res.json();
+                
+                if (json.success) {
+                    if (json.categories && json.categories.length > 0) {
+                        categories = json.categories;
+                    }
+                    
+                    if (json.data && Array.isArray(json.data)) {
+                        expenses = json.data.map(e => ({
+                            id: String(e.id || Date.now() + Math.random()), 
+                            date: e.date ? String(e.date).split('T')[0] : new Date().toISOString().split('T')[0],
+                            who: e.who || 'עמית',
+                            amount: parseFloat(e.amount) || 0,
+                            category: e.category || categories[0],
+                            desc: e.desc || '',
+                            type: e.type || 'משותפת'
+                        })).filter(e => !isNaN(e.amount) && e.amount > 0);
+                    } else {
+                        expenses = [];
+                    }
+                    
+                    populateCategoryDropdowns();
+                    renderCategoriesSettings();
+                    render();
+                    showToast('הנתונים נטענו בהצלחה', 'success');
+                } else {
+                    showToast('שגיאה בשרת: ' + (json.error || 'לא ידוע'), 'error');
+                }
+            } catch(err) {
+                console.error('שגיאת טעינה:', err);
+                showToast('שגיאה בחיבור לשרת', 'error');
+            }
+        }
+
+        async function sendToServer(action, payload) {
+            if (API === 'PUT_YOUR_REAL_LINK_HERE') return;
+            try {
+                await fetch(API, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: action, ...payload })
+                });
+            } catch (err) {
+                console.error('שגיאת שליחה לשרת:', err);
+            }
+        }
+
+        function populateCategoryDropdowns() {
+            const select = document.getElementById('category');
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderCategoriesSettings() {
+            const container = document.getElementById('categories-settings-list');
+            container.innerHTML = '';
+            categories.forEach((cat, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);";
+                div.innerHTML = `<span>${cat}</span> <button class="delete-btn" onclick="removeCategory(${index})">🗑️</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        async function addCategory() {
+            const input = document.getElementById('new-category-input');
+            const val = input.value.trim();
+            if (val && !categories.includes(val)) {
+                categories.push(val);
+                input.value = '';
+                populateCategoryDropdowns();
+                renderCategoriesSettings();
+                await sendToServer('saveCategories', { categories: categories });
+                showToast('הקטגוריה נוספה בהצלחה');
+            }
+        }
+
+        async function removeCategory(index) {
+            if (categories.length <= 1) {
+                showToast('חייבת להישאר לפחות קטגוריה אחת', 'error');
+                return;
+            }
+            categories.splice(index, 1);
+            populateCategoryDropdowns();
+            renderCategoriesSettings();
+            await sendToServer('saveCategories', { categories: categories });
+            showToast('הקטגוריה נמחקה');
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const expense = {
+                id: 'exp_' + Date.now(),
+                who: document.getElementById('who').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                type: document.getElementById('type').value,
+                date: document.getElementById('date').value,
+                desc: document.getElementById('desc').value
+            };
+
+            expenses.push(expense);
+            render();
+            
+            document.getElementById('amount').value = '';
+            document.getElementById('desc').value = '';
+            switchTab('list', document.querySelectorAll('.nav-item')[2]);
+
+            await sendToServer('add', expense);
+            showToast('ההוצאה נוספה בהצלחה');
+        }
+
+        async function deleteExpense(id) {
+            expenses = expenses.filter(e => e.id !== id);
+            render();
+            await sendToServer('delete', { id: id });
+            showToast('ההוצאה נמחקה');
+        }
+
+        function render() {
+            let amitShared = 0, elaShared = 0, amitPersonal = 0, elaPersonal = 0;
+            const listEl = document.getElementById('expenses-list');
+            listEl.innerHTML = '';
+
+            if (expenses.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">אין הוצאות להצגה.</p>';
+            }
+
+            const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sorted.forEach(e => {
+                if (e.type === 'משותפת') {
+                    if (e.who === 'עמית') amitShared += e.amount;
+                    else elaShared += e.amount;
+                } else {
+                    if (e.who === 'עמית') amitPersonal += e.amount;
+                    else elaPersonal += e.amount;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'expense-item';
+                item.innerHTML = `
+                    <div class="expense-info">
+                        <h4>${e.category} (${e.who}) ${e.type === 'אישית' ? '- אישית' : ''}</h4>
+                        <p>${e.date} ${e.desc ? '• ' + e.desc : ''}</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="expense-amount">₪${e.amount.toFixed(2)}</span>
+                        <button class="delete-btn" onclick="deleteExpense('${e.id}')">🗑️</button>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+
+            document.getElementById('metric-amit-shared').textContent = '₪' + amitShared.toFixed(2);
+            document.getElementById('metric-ela-shared').textContent = '₪' + elaShared.toFixed(2);
+            document.getElementById('metric-amit-personal').textContent = '₪' + amitPersonal.toFixed(2);
+            document.getElementById('metric-ela-personal').textContent = '₪' + elaPersonal.toFixed(2);
+
+            const totalShared = amitShared + elaShared;
+            const targetPerPerson = totalShared / 2;
+            const settlementText = document.getElementById('settlement-text');
+
+            if (totalShared === 0) {
+                settlementText.textContent = 'אין עדיין הוצאות משותפות להתחשבנות.';
+            } else {
+                const diff = amitShared - targetPerPerson;
+                if (Math.abs(diff) < 0.01) {
+                    settlementText.textContent = 'ההוצאות המשותפות מאוזנות לחלוטין! אין הפרשים.';
+                } else if (diff > 0) {
+                    settlementText.textContent = `אלה צריכה להעביר לעמית ₪${diff.toFixed(2)} כדי לאזן את ההוצאות המשותפות.`;
+                } else {
+                    settlementText.textContent = `עמית צריך להעביר לאלה ₪${Math.abs(diff).toFixed(2)} כדי לאזן את ההוצאות המשותפות.`;
+                }
+            }
+        }
+
+        window.onload = () => {
+            populateCategoryDropdowns();
+            renderCategoriesSettings();
+            loadFromSheets();
+        };
+    </script>
 </body>
 </html>
