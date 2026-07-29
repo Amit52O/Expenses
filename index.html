@@ -14,7 +14,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .header h1 { font-size: 21px; font-weight: 700; }
 .header span { font-size: 13px; color: #888; }
 
-/* Bottom nav */
 .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: white; border-top: 1px solid #eee; display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
 .nav-btn { flex: 1; padding: 10px 4px 8px; border: none; background: transparent; font-size: 11px; color: #aaa; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .nav-btn.active { color: #1a1a1a; font-weight: 600; }
@@ -61,7 +60,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; padding: 2px 6px; }
 .empty { text-align: center; padding: 3rem 1rem; color: #aaa; font-size: 15px; }
 
-.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); color: white; padding: 11px 22px; border-radius: 12px; font-size: 15px; font-weight: 500; opacity: 0; transition: opacity 0.3s; z-index: 999; }
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); color: white; padding: 11px 22px; border-radius: 12px; font-size: 15px; font-weight: 500; opacity: 0; transition: opacity 0.3s; z-index: 999; pointer-events: none; }
 .toast.success { background: #059669; }
 .toast.error { background: #DC2626; }
 .toast.show { opacity: 1; }
@@ -69,8 +68,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .cat-item-edit { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 .cat-item-edit:last-child { border-bottom: none; }
 .add-cat-row { display: flex; gap: 8px; margin-top: 10px; }
-.add-cat-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; }
-.add-cat-row button { background: #1a1a1a; color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; }
+.add-cat-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+.add-cat-row button { background: #1a1a1a; color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; cursor: pointer; }
 
 .chart-container { position: relative; width: 100%; max-width: 300px; margin: 0 auto 1.5rem auto; display: none; }
 </style>
@@ -252,11 +251,13 @@ function saveBudgets() {
 
 function populateCategoryDropdowns() {
   const select = document.getElementById('category');
+  if (!select) return;
   select.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 }
 
 function renderCategoriesSettings() {
   const listEl = document.getElementById('categories-edit-list');
+  if (!listEl) return;
   listEl.innerHTML = categories.map((cat, index) => `
     <div class="cat-item-edit">
       <span>${cat}</span>
@@ -303,8 +304,9 @@ async function deleteCategory(index) {
 function showTab(name, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
+  const target = document.getElementById('tab-' + name);
+  if (target) target.classList.add('active');
+  if (btn) btn.classList.add('active');
   render();
 }
 
@@ -330,9 +332,12 @@ function changeMonth(dir) {
 
 function updateLabels() {
   const label = MONTHS[viewMonth] + ' ' + viewYear;
-  document.getElementById('header-month').textContent = label;
-  document.getElementById('summary-month').textContent = label;
-  document.getElementById('list-month').textContent = label;
+  const hMonth = document.getElementById('header-month');
+  const sMonth = document.getElementById('summary-month');
+  const lMonth = document.getElementById('list-month');
+  if (hMonth) hMonth.textContent = label;
+  if (sMonth) sMonth.textContent = label;
+  if (lMonth) lMonth.textContent = label;
 }
 
 function getMonthExp() {
@@ -345,11 +350,7 @@ function getMonthExp() {
 function fmt(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
 
 async function loadFromSheets() {
-  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
-    showToast('שגיאה: חסר קישור לשרת', 'error');
-    return;
-  }
-  showToast('טוען נתונים...', 'success');
+  if (API.includes('כאן_צריך_להיות')) return;
   try {
     const res = await fetch(API);
     const json = await res.json();
@@ -366,18 +367,18 @@ async function loadFromSheets() {
       renderCategoriesSettings();
       render();
     }
-  } catch(err) { showToast('שגיאה בטעינה', 'error'); }
+  } catch(err) { console.error(err); }
 }
 
 async function addExpense() {
-  if (API === 'PUT_YOUR_REAL_LINK_HERE') {
-    alert('חסר קישור לשרת! נא לעדכן בקוד.');
+  if (API.includes('כאן_צריך_להיות')) {
+    alert('חסר קישור לשרת!');
     return;
   }
   const amount = parseFloat(document.getElementById('amount').value);
   const category = document.getElementById('category').value;
   const desc = document.getElementById('desc').value.trim();
-  const date = document.getElementById('date'].value;
+  const date = document.getElementById('date').value;
   if (!amount || amount <= 0) { alert('נא להזין סכום תקין'); return; }
   if (!date) { alert('נא לבחור תאריך'); return; }
   
@@ -408,6 +409,7 @@ async function deleteExpense(id) {
 
 function showToast(msg, type) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.className = 'toast ' + type + ' show';
   setTimeout(() => t.classList.remove('show'), 2500);
@@ -434,54 +436,64 @@ function renderSummary() {
   
   const budgetBoxEl = document.getElementById('budget-box');
   if (sharedBudget && sharedBudget > 0) {
-    budgetBoxEl.style.display = 'block';
+    if (budgetBoxEl) budgetBoxEl.style.display = 'block';
     const sharedStatusEl = document.getElementById('shared-budget-status');
     const sharedDiffEl = document.getElementById('shared-budget-diff');
-    sharedStatusEl.textContent = `${fmt(totalShared)} / ${fmt(sharedBudget)}`;
+    if (sharedStatusEl) sharedStatusEl.textContent = `${fmt(totalShared)} / ${fmt(sharedBudget)}`;
     
     const diff = sharedBudget - totalShared;
     if (diff < 0) {
-      sharedStatusEl.classList.add('over-budget');
-      sharedDiffEl.textContent = `חריגה מהתקציב המשותף: ${fmt(Math.abs(diff))}`;
-      sharedDiffEl.classList.add('over-budget');
+      if (sharedStatusEl) sharedStatusEl.classList.add('over-budget');
+      if (sharedDiffEl) {
+        sharedDiffEl.textContent = `חריגה מהתקציב המשותף: ${fmt(Math.abs(diff))}`;
+        sharedDiffEl.classList.add('over-budget');
+      }
     } else {
-      sharedStatusEl.classList.remove('over-budget');
-      sharedDiffEl.textContent = `נשאר לתקציב המשותף: ${fmt(diff)}`;
-      sharedDiffEl.classList.remove('over-budget');
+      if (sharedStatusEl) sharedStatusEl.classList.remove('over-budget');
+      if (sharedDiffEl) {
+        sharedDiffEl.textContent = `נשאר לתקציב המשותף: ${fmt(diff)}`;
+        sharedDiffEl.classList.remove('over-budget');
+      }
     }
   } else {
-    budgetBoxEl.style.display = 'none';
+    if (budgetBoxEl) budgetBoxEl.style.display = 'none';
   }
 
   const settlementEl = document.getElementById('settlement-text');
-  if (elaTarget > 0) {
-    const refund = elaShared - elaTarget;
-    if (refund > 0) {
-      settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות (היעד: ${fmt(elaTarget)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(refund)}</strong>`;
-    } else if (refund < 0) {
-      settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות.<br>אלה יכולה לשלם עוד <strong>${fmt(Math.abs(refund))}</strong> עד שתגיע ליעד.`;
+  if (settlementEl) {
+    if (elaTarget > 0) {
+      const refund = elaShared - elaTarget;
+      if (refund > 0) {
+        settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות (היעד: ${fmt(elaTarget)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(refund)}</strong>`;
+      } else if (refund < 0) {
+        settlementEl.innerHTML = `אלה שילמה <strong>${fmt(elaShared)}</strong> מתוך הוצאות משותפות.<br>אלה יכולה לשלם עוד <strong>${fmt(Math.abs(refund))}</strong> עד שתגיע ליעד.`;
+      } else {
+        settlementEl.innerHTML = `אלה שילמה בדיוק <strong>${fmt(elaShared)}</strong> לפי היעד. אין צורך בהחזרים.`;
+      }
     } else {
-      settlementEl.innerHTML = `אלה שילמה בדיוק <strong>${fmt(elaShared)}</strong> לפי היעד. אין צורך בהחזרים.`;
-    }
-  } else {
-    const targetPerPerson = totalShared / 2;
-    const diffAmit = amitShared - targetPerPerson;
-    
-    if (totalShared === 0) {
-      settlementEl.textContent = 'אין הוצאות משותפות החודש.';
-    } else if (Math.abs(diffAmit) < 0.5) {
-      settlementEl.innerHTML = `ההוצאות המשותפות מתחלקות שווה בשווה (סה"כ ${fmt(totalShared)}).<br>✨ <strong>החשבון מאוזן לגמרי!</strong>`;
-    } else if (diffAmit > 0) {
-      settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>אלה צריכה להחזיר לעמית: ${fmt(diffAmit)}</strong>`;
-    } else {
-      settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(Math.abs(diffAmit))}</strong>`;
+      const targetPerPerson = totalShared / 2;
+      const diffAmit = amitShared - targetPerPerson;
+      
+      if (totalShared === 0) {
+        settlementEl.textContent = 'אין הוצאות משותפות החודש.';
+      } else if (Math.abs(diffAmit) < 0.5) {
+        settlementEl.innerHTML = `ההוצאות המשותפות מתחלקות שווה בשווה (סה"כ ${fmt(totalShared)}).<br>✨ <strong>החשבון מאוזן לגמרי!</strong>`;
+      } else if (diffAmit > 0) {
+        settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>אלה צריכה להחזיר לעמית: ${fmt(diffAmit)}</strong>`;
+      } else {
+        settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(Math.abs(diffAmit))}</strong>`;
+      }
     }
   }
 
-  document.getElementById('amit-shared-total').textContent = fmt(amitShared);
-  document.getElementById('ela-shared-total').textContent = fmt(elaShared);
-  document.getElementById('amit-personal-total').textContent = fmt(amitPersonal);
-  document.getElementById('ela-personal-total').textContent = fmt(elaPersonal);
+  const asTot = document.getElementById('amit-shared-total');
+  const esTot = document.getElementById('ela-shared-total');
+  const apTot = document.getElementById('amit-personal-total');
+  const epTot = document.getElementById('ela-personal-total');
+  if (asTot) asTot.textContent = fmt(amitShared);
+  if (esTot) esTot.textContent = fmt(elaShared);
+  if (apTot) apTot.textContent = fmt(amitPersonal);
+  if (epTot) epTot.textContent = fmt(elaPersonal);
 
   function groupByCategory(expList) {
     const obj = {};
@@ -496,6 +508,7 @@ function renderSummary() {
 
 function drawPieChart(instanceName, canvasId, containerId, title, dataObj) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   const labels = Object.keys(dataObj);
   const data = Object.values(dataObj);
 
@@ -506,7 +519,9 @@ function drawPieChart(instanceName, canvasId, containerId, title, dataObj) {
   
   container.style.display = 'block';
 
-  const ctx = document.getElementById(canvasId).getContext('2d');
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
   if (chartInstances[instanceName]) { chartInstances[instanceName].destroy(); }
 
   chartInstances[instanceName] = new Chart(ctx, {
@@ -528,6 +543,7 @@ function drawPieChart(instanceName, canvasId, containerId, title, dataObj) {
 function renderList() {
   const list = getMonthExp().slice().reverse();
   const el = document.getElementById('expense-list');
+  if (!el) return;
   if (!list.length) { el.innerHTML = '<div class="empty">אין הוצאות בחודש זה</div>'; return; }
   
   const dotClass = { 'עמית': 'dot-amit', 'אלה': 'dot-ela' };
