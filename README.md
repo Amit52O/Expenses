@@ -132,11 +132,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
 
     <div class="card" style="background: #EFF6FF; border-color: #BFDBFE;">
-      <div class="card-title" style="color: #1E40AF;">סטטוס החזרים (לפי יעד אלה)</div>
+      <div class="card-title" style="color: #1E40AF;">סטטוס החזרים</div>
       <div style="font-size: 14px; color: #1E3A8A;" id="settlement-text">טוען נתונים...</div>
     </div>
 
-    <!-- 4 קוביות מדויקות בלבד -->
+    <!-- 4 הקוביות המבוקשות בדיוק -->
     <div class="grid2">
       <div class="metric">
         <div class="metric-label">עמית (משותף)</div>
@@ -185,7 +185,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <input type="number" id="setting-shared-budget" placeholder="0" onchange="saveBudgets()">
       </div>
       <div class="field">
-        <label>יעד הוצאה משותפת לאלה (₪)</label>
+        <label>יעד הוצאה משותפת לאלה (₪) - השאר ריק או 0 לחלוקה שווה</label>
         <input type="number" id="setting-ela-target" placeholder="0" onchange="saveBudgets()">
       </div>
     </div>
@@ -422,7 +422,7 @@ function renderSummary() {
   
   const totalShared = amitShared + elaShared;
   
-  // ניהול תצוגת תיבת התקציב המשותף בהתאם לדרישה
+  // 1. ניהול תצוגת תיבת התקציב המשותף
   const budgetBoxEl = document.getElementById('budget-box');
   if (sharedBudget && sharedBudget > 0) {
     budgetBoxEl.style.display = 'block';
@@ -444,6 +444,7 @@ function renderSummary() {
     budgetBoxEl.style.display = 'none';
   }
 
+  // 2. סטטוס החזרים: לפי יעד אלה או חלוקה שווה אוטומטית אם אין יעד
   const settlementEl = document.getElementById('settlement-text');
   if (elaTarget > 0) {
     const refund = elaShared - elaTarget;
@@ -455,10 +456,24 @@ function renderSummary() {
       settlementEl.innerHTML = `אלה שילמה בדיוק <strong>${fmt(elaShared)}</strong> לפי היעד. אין צורך בהחזרים.`;
     }
   } else {
-    settlementEl.textContent = 'לא הוגדר יעד הוצאה לאלה.';
+    // חישוב חלוקה שווה בשווה (חצי מהסכום הכולל של ההוצאות המשותפות לכל אחד)
+    const targetPerPerson = totalShared / 2;
+    const diffAmit = amitShared - targetPerPerson; // חיובי = עמית שילם יותר מדי, שלילי = עמית שילם פחות מדי
+    
+    if (totalShared === 0) {
+      settlementEl.textContent = 'אין הוצאות משותפות החודש.';
+    } else if (Math.abs(diffAmit) < 0.5) {
+      settlementEl.innerHTML = `ההוצאות המשותפות מתחוקות שווה בשווה (סה"כ ${fmt(totalShared)}).<br>✨ <strong>החשבון מאוזן לגמרי!</strong>`;
+    } else if (diffAmit > 0) {
+      // עמית שילם יותר מחצי, אלה צריכה להחזיר לעמית
+      settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>אלה צריכה להחזיר לעמית: ${fmt(diffAmit)}</strong>`;
+    } else {
+      // אלה שילמה יותר מחצי, עמית צריך להחזיר לאלה
+      settlementEl.innerHTML = `סך ההוצאות המשותפות: <strong>${fmt(totalShared)}</strong> (כל אחד צריך לשלם ${fmt(targetPerPerson)}).<br>👉 <strong>עמית צריך להחזיר לאלה: ${fmt(Math.abs(diffAmit))}</strong>`;
+    }
   }
 
-  // עדכון הערכים ב-4 הקוביות בלבד
+  // 3. עדכון 4 הקוביות בלבד
   document.getElementById('amit-shared-total').textContent = fmt(amitShared);
   document.getElementById('ela-shared-total').textContent = fmt(elaShared);
   document.getElementById('amit-personal-total').textContent = fmt(amitPersonal);
